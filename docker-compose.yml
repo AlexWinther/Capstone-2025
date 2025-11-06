@@ -29,7 +29,7 @@ services:
         uv run app.py
       "
     ports:
-      - "8000:8000"
+      - "3000:3000"
     volumes:
       - .:/app
     working_dir: /app

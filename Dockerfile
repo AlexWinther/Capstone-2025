@@ -19,7 +19,7 @@ COPY . .
 RUN uv sync --locked --no-dev
 
 # app.py runs on port 5000 (Flask default port)
-EXPOSE 7500
+EXPOSE 3000
 
 # Run app.py when the container launches
 CMD ["uv", "run", "app.py"]
