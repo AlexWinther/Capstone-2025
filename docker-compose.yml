@@ -1,21 +1,5 @@
 # docker-compose.yml
-
 services:
-  db:
-    image: postgres:16
-    container_name: capstone_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-      POSTGRES_DB: ${DB_NAME:-papers}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - capstone_postgres_data:/var/lib/postgresql/data
-    networks:
-      - capstone_network
-
   chromadb:
     image: chromadb/chroma
     container_name: chroma_container
@@ -40,9 +24,9 @@ services:
           sleep 2
         done &&
         echo 'Database ready. Running setup script...' &&
-        psql -h db -U ${DB_USER:-user} -d ${DB_NAME:-papers} -f /app/init.sql &&
+        psql -h ${DB_HOST:-db} -U ${DB_USER:-user} -d ${DB_NAME:-papers} -f /app/init.sql &&
         echo 'Setup complete. Starting application...' &&
-        python app.py
+        uv run app.py
       "
     ports:
       - "80:80"
@@ -68,7 +52,6 @@ services:
       - capstone_network
 
 volumes:
-  capstone_postgres_data:
   capstone_chroma_data:
 
 networks:
