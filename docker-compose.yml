@@ -31,4 +31,4 @@ services:
       - FLASK_APP=app.py
       - FLASK_ENV=development
       - FLASK_DEBUG=1
-      - CHROMA_HOST=chromadb
+      - CHROMA_HOST=${CHROMA_HOST:-chromadb}
