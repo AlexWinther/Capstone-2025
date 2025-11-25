@@ -34,7 +34,6 @@ RESULTS_JSONL_FILENAME = "recommendation_evaluation_results.jsonl"
 EVAL_SET_SIZE = 100
 MAX_WORKERS = 5
 
-
 def calculate_mrr(ranks):
     """Calculates the Mean Reciprocal Rank."""
     if not ranks:
@@ -43,7 +42,6 @@ def calculate_mrr(ranks):
     if not reciprocal_ranks:
         return 0.0
     return np.mean(reciprocal_ranks)
-
 
 def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple:
     """
@@ -243,53 +241,6 @@ def main():
                     f.write(json.dumps(result_entry) + "\n")
 
                 results_list.append(result_entry)
-            except Exception as e:
-                print(f"Task {task['index']} generated an exception: {e}")
-
-    print(f"Running {len(tasks)} evaluations with {MAX_WORKERS} workers...")
-
-    # Ensure the file exists or create it (clear it if starting fresh run)
-    # Note: If you want to Append to existing run, remove the 'w' open here.
-    # But usually a fresh run implies a fresh file or we might want to keep history.
-    # For now, let's just ensure we can append.
-    if not os.path.exists(RESULTS_JSONL_FILENAME):
-        with open(RESULTS_JSONL_FILENAME, "w") as f:
-            pass
-
-    results_list = []
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        # Submit all tasks
-        future_to_task = {
-            executor.submit(
-                run_full_pipeline_evaluation,
-                task["row"],
-                task["model"],
-                task["search_count"],
-            ): task
-            for task in tasks
-        }
-
-        for future in concurrent.futures.as_completed(future_to_task):
-            task = future_to_task[future]
-            try:
-                status, prediction, rank = future.result()
-
-                result_entry = {
-                    "model": task["model"],
-                    "search_count": task["search_count"],
-                    "paper_pair_index": task["index"],
-                    "ground_truth": int(task["row"]["label"]),
-                    "prediction": prediction,
-                    "rank": rank,
-                    "status": status,
-                }
-
-                # Incremental Save
-                with open(RESULTS_JSONL_FILENAME, "a") as f:
-                    f.write(json.dumps(result_entry) + "\n")
-
-                results_list.append(result_entry)
 
                 if status == "SUCCESS":
                     if prediction == 1:
@@ -305,35 +256,6 @@ def main():
 
             except Exception as e:
                 print(f"Task {task['index']} generated an exception: {e}")
-
-    # Calculate and print summary stats
-    print("\n--- Evaluation Complete ---")
-    print(f"Detailed results saved to {RESULTS_JSONL_FILENAME}")
-
-    # Simple summary calculation from results_list
-    # Group by model and search_count
-    summary_groups = {}
-    for res in results_list:
-        if res["status"] != "SUCCESS":
-            continue
-        key = (res["model"], res["search_count"])
-        if key not in summary_groups:
-            summary_groups[key] = {"predictions": [], "ground_truths": [], "ranks": []}
-
-        summary_groups[key]["predictions"].append(res["prediction"])
-        summary_groups[key]["ground_truths"].append(res["ground_truth"])
-        if res["prediction"] == 1:
-            summary_groups[key]["ranks"].append(res["rank"])
-        else:
-            summary_groups[key]["ranks"].append(0)
-
-    print("\n--- Results Summary ---")
-    with open(RESULTS_FILENAME, "w") as f:
-        f.write("--- Full Recommendation Pipeline Evaluation ---\n\n")
-        for (model, search_count), data in summary_groups.items():
-            predictions = data["predictions"]
-            ground_truths = data["ground_truths"]
-            ranks = data["ranks"]
 
     # Calculate and print summary stats
     print("\n--- Evaluation Complete ---")
