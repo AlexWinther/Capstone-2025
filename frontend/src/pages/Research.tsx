@@ -61,7 +61,7 @@ const Research = () => {
       ) : (
         <>
           <div className="flex-1 overflow-auto p-6">
-            <div className="mx-auto max-w-4xl space-y-6">
+            <div className="mx-auto max-w-[1400px] space-y-6 px-4">
               {messages.map((message, index) => (
                 <ChatMessage key={index} role={message.role} content={message.content} />
               ))}
