@@ -59,21 +59,14 @@ const Research = () => {
           </div>
         </div>
       ) : (
-        <>
-          <div className="flex-1 overflow-auto p-6">
-            <div className="mx-auto max-w-[1400px] space-y-6 px-4">
-              {messages.map((message, index) => (
-                <ChatMessage key={index} role={message.role} content={message.content} />
-              ))}
-              {showResults && <ResearchResults />}
-            </div>
+        <div className="flex-1 overflow-auto p-6">
+          <div className="mx-auto max-w-[1400px] space-y-6 px-4">
+            {messages.map((message, index) => (
+              <ChatMessage key={index} role={message.role} content={message.content} />
+            ))}
+            {showResults && <ResearchResults />}
           </div>
-          <div className="sticky bottom-0 border-t bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="mx-auto max-w-4xl">
-              <ChatInput onSend={handleSendMessage} compact />
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );
