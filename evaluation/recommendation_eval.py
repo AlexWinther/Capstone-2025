@@ -43,11 +43,11 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
     try:
         set_default_llm(model_name)
 
-        paper1_title = row["title_first"]
-        paper1_abstract = row["abstract_first"]
-        paper2_id = row["openalexid_second"]
+        paper2_title = row["title_second"]
+        paper2_abstract = row["abstract_second"]
+        paper1_id = row["openalexid_first"]
 
-        query_text = f"Title: {paper1_title}. Abstract: {paper1_abstract}"
+        query_text = f"Title: {paper2_title}. Abstract: {paper2_abstract}"
 
     except Exception as e:
         print(f"ERROR setting up paper: {e}")
@@ -128,8 +128,8 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
         )
 
         ranked_ids = results.get('ids', [[]])[0]
-        if paper2_id in ranked_ids:
-            rank = ranked_ids.index(paper2_id) + 1
+        if paper1_id in ranked_ids:
+            rank = ranked_ids.index(paper1_id) + 1
             prediction = 1
 
         return "SUCCESS", prediction, rank
