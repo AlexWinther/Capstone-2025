@@ -1,16 +1,30 @@
-function App() {
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-blue-600">
-          Capstone2025 is working! 🎉
-        </h1>
-        <p className="mt-4 text-gray-600">
-          Your React + TypeScript + Tailwind setup is ready.
-        </p>
-      </div>
-    </div>
-  )
-}
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import AppLayout from "./components/layout/AppLayout";
 
-export default App
+const queryClient = new QueryClient();
+
+import Research from "./pages/Research";
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <BrowserRouter>
+        <SidebarProvider>
+          <Routes>
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Research />} />
+            </Route>
+            <Route path="*" element={<div className="p-6">404 - Not Found</div>} />
+          </Routes>
+        </SidebarProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
