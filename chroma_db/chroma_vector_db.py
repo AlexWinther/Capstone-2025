@@ -13,6 +13,7 @@ from typing import List, Optional, TypedDict, Union
 
 import chromadb
 from chromadb.api.models.Collection import Collection
+from chromadb.config import Settings
 from utils.status import Status
 import traceback
 import sys
@@ -21,7 +22,28 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
+
+# Ensure telemetry is disabled for all Chroma clients (HTTP or in-memory).
+try:
+    chromadb.configure(anonymized_telemetry=False)
+except Exception as exc:  # best-effort; fall back silently if configure fails
+    logger.warning("Failed to configure Chroma telemetry settings: %s", exc)
+
+# Some versions of Chroma still instantiate the Posthog client even when
+# anonymized telemetry is disabled. Force-disable capture so no network
+# calls are attempted and the noisy log errors stop.
+try:
+    import posthog
+
+    posthog.disabled = True
+
+    def _noop_capture(*_args, **_kwargs):
+        return None
+
+    posthog.capture = _noop_capture  # type: ignore[assignment]
+except Exception as exc:
+    logger.warning("Failed to override Posthog telemetry capture: %s", exc)
 
 
 class PaperData(TypedDict):
@@ -40,19 +62,62 @@ CHROMA_HOST = os.getenv("CHROMA_HOST", "chromadb")  # default for Docker
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", 8000))
 
 
+USE_IN_MEMORY_DB = os.getenv("USE_IN_MEMORY_DB", "").lower() == "true"
+
+
+def _build_in_memory_client(settings: Settings):
+    """Create an in-memory Chroma client honoring telemetry settings."""
+    ephemeral_cls = getattr(chromadb, "EphemeralClient", None)
+    if callable(ephemeral_cls):
+        return ephemeral_cls(settings=settings)
+
+    # Fallback for older Chroma releases without EphemeralClient
+    return chromadb.Client(
+        Settings(
+            chroma_db_impl="duckdb+parquet",
+            persist_directory=None,
+            anonymized_telemetry=settings.anonymized_telemetry,
+        )
+    )
+
+
 class ChromaVectorDB:
     """
     Wrapper class for ChromaDB operations: storing, searching, and retrieving embeddings.
     """
 
-    def __init__(self, collection_name: str = "research-papers") -> None:
+    def __init__(
+        self,
+        collection_name: str = "research-papers",
+        use_in_memory: Optional[bool] = None,
+    ) -> None:
         """
         Initialize the ChromaVectorDB client and collection.
         Args:
             collection_name (str): The name of the ChromaDB collection to use.
+            use_in_memory (Optional[bool]): Force in-memory Chroma client if True. When
+                None, defaults to USE_IN_MEMORY_DB environment variable.
         """
-        # single code-path, host decided by env-var
-        self.client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
+        self.use_in_memory = (
+            USE_IN_MEMORY_DB if use_in_memory is None else use_in_memory
+        )
+        settings = Settings(anonymized_telemetry=False)
+
+        if self.use_in_memory:
+            logger.info("ChromaVectorDB running in in-memory mode")
+            self.client = _build_in_memory_client(settings)
+        else:
+            logger.info(
+                "Connecting to ChromaDB host=%s port=%s (telemetry disabled)",
+                CHROMA_HOST,
+                CHROMA_PORT,
+            )
+            self.client = chromadb.HttpClient(
+                host=CHROMA_HOST,
+                port=CHROMA_PORT,
+                settings=settings,
+            )
+
         self.collection: Collection = self.client.get_or_create_collection(
             collection_name
         )
