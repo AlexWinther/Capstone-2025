@@ -5,6 +5,7 @@ from sklearn.metrics import precision_score, recall_score, accuracy_score
 import numpy as np
 import uuid
 import json
+import concurrent.futures
 
 # Set CHROMA_HOST to localhost for local execution
 os.environ["CHROMA_HOST"] = "localhost"
@@ -25,7 +26,9 @@ MODELS_TO_TEST = ["gpt-5-nano"]
 SEARCH_RESULTS_TO_CHECK_LIST = [100]
 EVALUATION_DATASET = "evaluation/data/paper_pairs.csv"
 RESULTS_FILENAME = "recommendation_evaluation_results.txt"
-EVAL_SET_SIZE = 50
+RESULTS_JSONL_FILENAME = "recommendation_evaluation_results.jsonl"
+EVAL_SET_SIZE = 100
+MAX_WORKERS = 5
 
 def calculate_mrr(ranks):
     """Calculates the Mean Reciprocal Rank."""
@@ -164,36 +167,99 @@ def main():
         print(f"Models {MODELS_TO_TEST} not found in available models: {available_models}.")
         return
 
-    results_summary = {}
-
+    # Prepare list of tasks
+    tasks = []
     for model in models_to_run:
         for search_count in SEARCH_RESULTS_TO_CHECK_LIST:
-            print(f"\n--- Testing Model: {model}, Candidate Pool Size: {search_count} ---")
-
-            predictions = []
-            ground_truths = []
-            ranks = []
-
             for i, row in df.iterrows():
-                print(f"\n--- Running Evaluation for paper pair {i + 1}/{len(df)} ---")
-                status, prediction, rank = run_full_pipeline_evaluation(
-                    row, model, search_count
-                )
+                tasks.append({
+                    "row": row,
+                    "model": model,
+                    "search_count": search_count,
+                    "index": i
+                })
 
+    print(f"Running {len(tasks)} evaluations with {MAX_WORKERS} workers...")
+
+    # Ensure the file exists or create it (clear it if starting fresh run)
+    # Note: If you want to Append to existing run, remove the 'w' open here.
+    # But usually a fresh run implies a fresh file or we might want to keep history.
+    # For now, let's just ensure we can append.
+    if not os.path.exists(RESULTS_JSONL_FILENAME):
+        with open(RESULTS_JSONL_FILENAME, 'w') as f:
+            pass
+
+    results_list = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        # Submit all tasks
+        future_to_task = {
+            executor.submit(run_full_pipeline_evaluation, task["row"], task["model"], task["search_count"]): task 
+            for task in tasks
+        }
+
+        for future in concurrent.futures.as_completed(future_to_task):
+            task = future_to_task[future]
+            try:
+                status, prediction, rank = future.result()
+                
+                result_entry = {
+                    "model": task["model"],
+                    "search_count": task["search_count"],
+                    "paper_pair_index": task["index"],
+                    "ground_truth": int(task["row"]["label"]),
+                    "prediction": prediction,
+                    "rank": rank,
+                    "status": status
+                }
+
+                # Incremental Save
+                with open(RESULTS_JSONL_FILENAME, "a") as f:
+                    f.write(json.dumps(result_entry) + "\n")
+                
+                results_list.append(result_entry)
+                
                 if status == "SUCCESS":
-                    predictions.append(prediction)
-                    ground_truths.append(row["label"])
                     if prediction == 1:
-                        ranks.append(rank)
-                        print(f"Result: Recommended (Rank: {rank}), Ground Truth: {row['label']}")
+                        print(f"Task {task['index']} ({task['model']}): Recommended (Rank: {rank})")
                     else:
-                        ranks.append(0)
-                        print(f"Result: Not Recommended, Ground Truth: {row['label']}")
+                        print(f"Task {task['index']} ({task['model']}): Not Recommended")
                 else:
-                    print("Result: ERROR - Run was invalid and will be skipped.")
+                    print(f"Task {task['index']} ({task['model']}): ERROR")
 
+            except Exception as e:
+                print(f"Task {task['index']} generated an exception: {e}")
+
+    # Calculate and print summary stats
+    print("\n--- Evaluation Complete ---")
+    print(f"Detailed results saved to {RESULTS_JSONL_FILENAME}")
+    
+    # Simple summary calculation from results_list
+    # Group by model and search_count
+    summary_groups = {}
+    for res in results_list:
+        if res["status"] != "SUCCESS":
+            continue
+        key = (res["model"], res["search_count"])
+        if key not in summary_groups:
+            summary_groups[key] = {"predictions": [], "ground_truths": [], "ranks": []}
+        
+        summary_groups[key]["predictions"].append(res["prediction"])
+        summary_groups[key]["ground_truths"].append(res["ground_truth"])
+        if res["prediction"] == 1:
+            summary_groups[key]["ranks"].append(res["rank"])
+        else:
+            summary_groups[key]["ranks"].append(0)
+
+    print("\n--- Results Summary ---")
+    with open(RESULTS_FILENAME, "w") as f:
+        f.write("--- Full Recommendation Pipeline Evaluation ---\n\n")
+        for (model, search_count), data in summary_groups.items():
+            predictions = data["predictions"]
+            ground_truths = data["ground_truths"]
+            ranks = data["ranks"]
+            
             if not ground_truths:
-                print("No valid runs completed. Cannot calculate metrics.")
                 continue
 
             precision = precision_score(ground_truths, predictions, zero_division=0)
@@ -201,30 +267,19 @@ def main():
             accuracy = accuracy_score(ground_truths, predictions)
             mrr = calculate_mrr(ranks)
 
-            results_summary[(model, search_count)] = {
-                "precision": precision,
-                "recall": recall,
-                "accuracy": accuracy,
-                "mrr": mrr,
-                "valid_runs": len(ground_truths),
-                "successful_recommendations": sum(1 for r in ranks if r > 0)
-            }
+            summary_text = (
+                f"Model: {model}, Candidate Pool Size: {search_count}\n"
+                f"  Valid Runs: {len(ground_truths)}\n"
+                f"  Successful Recommendations: {sum(1 for r in ranks if r > 0)}\n"
+                f"  Precision: {precision:.4f}\n"
+                f"  Recall: {recall:.4f}\n"
+                f"  Accuracy: {accuracy:.4f}\n"
+                f"  Mean Reciprocal Rank (MRR): {mrr:.4f}\n\n"
+            )
+            print(summary_text)
+            f.write(summary_text)
 
-    print("\n--- Evaluation Complete ---")
-    print("\n--- Results Summary ---")
-
-    with open(RESULTS_FILENAME, "w") as f:
-        f.write("--- Full Recommendation Pipeline Evaluation ---\n\n")
-        for (model, search_count), metrics in results_summary.items():
-            f.write(f"Model: {model}, Candidate Pool Size: {search_count}\n")
-            f.write(f"  Valid Runs: {metrics['valid_runs']}\n")
-            f.write(f"  Successful Recommendations: {metrics['successful_recommendations']}\n")
-            f.write(f"  Precision: {metrics['precision']:.4f}\n")
-            f.write(f"  Recall: {metrics['recall']:.4f}\n")
-            f.write(f"  Accuracy: {metrics['accuracy']:.4f}\n")
-            f.write(f"  Mean Reciprocal Rank (MRR): {metrics['mrr']:.4f}\n\n")
-
-    print(f"Results saved to {RESULTS_FILENAME}")
+    print(f"Results summary saved to {RESULTS_FILENAME}")
 
 
 if __name__ == "__main__":
