@@ -14,7 +14,11 @@ os.environ["CHROMA_HOST"] = "localhost"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from llm.LLMDefinition import set_default_llm, get_available_models
-from llm.StategraphAgent import input_node, out_of_scope_check_node, quality_control_node
+from llm.StategraphAgent import (
+    input_node,
+    out_of_scope_check_node,
+    quality_control_node,
+)
 from paper_handling.paper_handler import fetch_works_multiple_queries
 from llm.Embeddings import embed_paper_text
 from chroma_db.chroma_vector_db import CHROMA_HOST, CHROMA_PORT
@@ -30,6 +34,7 @@ RESULTS_JSONL_FILENAME = "recommendation_evaluation_results.jsonl"
 EVAL_SET_SIZE = 100
 MAX_WORKERS = 5
 
+
 def calculate_mrr(ranks):
     """Calculates the Mean Reciprocal Rank."""
     if not ranks:
@@ -38,6 +43,7 @@ def calculate_mrr(ranks):
     if not reciprocal_ranks:
         return 0.0
     return np.mean(reciprocal_ranks)
+
 
 def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple:
     """
@@ -82,7 +88,7 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
         # De-duplicate candidate papers based on their ID
         unique_papers = {}
         for paper in candidate_papers:
-            paper_id = paper.get('id')
+            paper_id = paper.get("id")
             if paper_id and paper_id not in unique_papers:
                 unique_papers[paper_id] = paper
         candidate_papers = list(unique_papers.values())
@@ -100,23 +106,31 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
     try:
         temp_collection = chroma_client.create_collection(name=temp_collection_name)
 
-        paper_texts = [f"{p.get('title', '')} {p.get('abstract', '')}" for p in candidate_papers]
+        paper_texts = [
+            f"{p.get('title', '')} {p.get('abstract', '')}" for p in candidate_papers
+        ]
         if not paper_texts:
             print("WARNING: No paper texts to embed. Aborting run.")
             return "ERROR", None, None
 
         embeddings = [embed_paper_text(text) for text in paper_texts]
-        paper_ids = [p.get('id') for p in candidate_papers]
+        paper_ids = [p.get("id") for p in candidate_papers]
 
-        valid_indices = [i for i, pid in enumerate(paper_ids) if pid is not None and embeddings[i] is not None]
+        valid_indices = [
+            i
+            for i, pid in enumerate(paper_ids)
+            if pid is not None and embeddings[i] is not None
+        ]
         if not valid_indices:
-            print("WARNING: No valid papers after filtering for IDs and embeddings. Aborting run.")
+            print(
+                "WARNING: No valid papers after filtering for IDs and embeddings. Aborting run."
+            )
             return "ERROR", None, None
 
         temp_collection.add(
             ids=[paper_ids[i] for i in valid_indices],
             embeddings=[embeddings[i] for i in valid_indices],
-            documents=[paper_texts[i] for i in valid_indices]
+            documents=[paper_texts[i] for i in valid_indices],
         )
 
         query_embedding = embed_paper_text(query_text)
@@ -127,10 +141,10 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
         results = temp_collection.query(
             query_embeddings=[query_embedding],
             n_results=search_results_count,
-            include=['documents']
+            include=["documents"],
         )
 
-        ranked_ids = results.get('ids', [[]])[0]
+        ranked_ids = results.get("ids", [[]])[0]
         if paper1_id in ranked_ids:
             rank = ranked_ids.index(paper1_id) + 1
             prediction = 1
@@ -143,7 +157,9 @@ def run_full_pipeline_evaluation(row, model_name, search_results_count) -> tuple
     finally:
         try:
             client_for_cleanup = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-            if temp_collection_name in [c.name for c in client_for_cleanup.list_collections()]:
+            if temp_collection_name in [
+                c.name for c in client_for_cleanup.list_collections()
+            ]:
                 client_for_cleanup.delete_collection(name=temp_collection_name)
         except Exception as e:
             print(f"ERROR during cleanup of temporary ChromaDB collection: {e}")
@@ -164,7 +180,9 @@ def main():
     available_models = get_available_models()
     models_to_run = [m for m in MODELS_TO_TEST if m in available_models]
     if not models_to_run:
-        print(f"Models {MODELS_TO_TEST} not found in available models: {available_models}.")
+        print(
+            f"Models {MODELS_TO_TEST} not found in available models: {available_models}."
+        )
         return
 
     # Prepare list of tasks
@@ -172,12 +190,14 @@ def main():
     for model in models_to_run:
         for search_count in SEARCH_RESULTS_TO_CHECK_LIST:
             for i, row in df.iterrows():
-                tasks.append({
-                    "row": row,
-                    "model": model,
-                    "search_count": search_count,
-                    "index": i
-                })
+                tasks.append(
+                    {
+                        "row": row,
+                        "model": model,
+                        "search_count": search_count,
+                        "index": i,
+                    }
+                )
 
     print(f"Running {len(tasks)} evaluations with {MAX_WORKERS} workers...")
 
@@ -186,7 +206,7 @@ def main():
     # But usually a fresh run implies a fresh file or we might want to keep history.
     # For now, let's just ensure we can append.
     if not os.path.exists(RESULTS_JSONL_FILENAME):
-        with open(RESULTS_JSONL_FILENAME, 'w') as f:
+        with open(RESULTS_JSONL_FILENAME, "w") as f:
             pass
 
     results_list = []
@@ -194,7 +214,12 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         # Submit all tasks
         future_to_task = {
-            executor.submit(run_full_pipeline_evaluation, task["row"], task["model"], task["search_count"]): task
+            executor.submit(
+                run_full_pipeline_evaluation,
+                task["row"],
+                task["model"],
+                task["search_count"],
+            ): task
             for task in tasks
         }
 
@@ -210,7 +235,7 @@ def main():
                     "ground_truth": int(task["row"]["label"]),
                     "prediction": prediction,
                     "rank": rank,
-                    "status": status
+                    "status": status,
                 }
 
                 # Incremental Save
@@ -218,6 +243,8 @@ def main():
                     f.write(json.dumps(result_entry) + "\n")
 
                 results_list.append(result_entry)
+            except Exception as e:
+                print(f"Task {task['index']} generated an exception: {e}")
 
     print(f"Running {len(tasks)} evaluations with {MAX_WORKERS} workers...")
 
@@ -226,7 +253,7 @@ def main():
     # But usually a fresh run implies a fresh file or we might want to keep history.
     # For now, let's just ensure we can append.
     if not os.path.exists(RESULTS_JSONL_FILENAME):
-        with open(RESULTS_JSONL_FILENAME, 'w') as f:
+        with open(RESULTS_JSONL_FILENAME, "w") as f:
             pass
 
     results_list = []
@@ -234,7 +261,12 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         # Submit all tasks
         future_to_task = {
-            executor.submit(run_full_pipeline_evaluation, task["row"], task["model"], task["search_count"]): task
+            executor.submit(
+                run_full_pipeline_evaluation,
+                task["row"],
+                task["model"],
+                task["search_count"],
+            ): task
             for task in tasks
         }
 
@@ -250,7 +282,7 @@ def main():
                     "ground_truth": int(task["row"]["label"]),
                     "prediction": prediction,
                     "rank": rank,
-                    "status": status
+                    "status": status,
                 }
 
                 # Incremental Save
@@ -261,9 +293,13 @@ def main():
 
                 if status == "SUCCESS":
                     if prediction == 1:
-                        print(f"Task {task['index']} ({task['model']}): Recommended (Rank: {rank})")
+                        print(
+                            f"Task {task['index']} ({task['model']}): Recommended (Rank: {rank})"
+                        )
                     else:
-                        print(f"Task {task['index']} ({task['model']}): Not Recommended")
+                        print(
+                            f"Task {task['index']} ({task['model']}): Not Recommended"
+                        )
                 else:
                     print(f"Task {task['index']} ({task['model']}): ERROR")
 
@@ -298,9 +334,6 @@ def main():
             predictions = data["predictions"]
             ground_truths = data["ground_truths"]
             ranks = data["ranks"]
-
-            except Exception as e:
-                print(f"Task {task['index']} generated an exception: {e}")
 
     # Calculate and print summary stats
     print("\n--- Evaluation Complete ---")
