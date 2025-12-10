@@ -223,6 +223,8 @@ def get_project_prompt(user_id: str, project_id: str):
 def get_all_projects(user_id: str) -> list[dict]:
     """
     Retrieve a list of all projects of the specified user in the database.
+    Args:
+        user_id (str): Identifier of the authenticated user.
     Returns:
         list[dict]: List of all project records as dictionaries.
     """
