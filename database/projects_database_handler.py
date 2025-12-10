@@ -134,13 +134,13 @@ def get_user_profile_embedding(user_id: str, project_id: str) -> List[float] | N
     return None
 
 
-def add_queries_to_project_db(user_id: str, queries: list[str], project_id: str):
+def add_queries_to_project_db(user_id: str, project_id: str, queries: list[str]):
     """
-    Add search queries to a project owned by the current user in the projects_table for reuse.
+    Add search queries to a project owned by the specified user in the projects_table for reuse.
     Args:
         user_id (str): Identifier of the authenticated user.
-        queries (list[str]): List of search queries.
         project_id (str): The project ID.
+        queries (list[str]): List of search queries.
     Returns:
         Status: Status.SUCCESS if update was successful, Status.FAILURE otherwise.
     Side effects:
@@ -222,7 +222,7 @@ def get_project_prompt(user_id: str, project_id: str):
 
 def get_all_projects(user_id: str) -> list[dict]:
     """
-    Retrieve a list of all projects of the current user in the database.
+    Retrieve a list of all projects of the specified user in the database.
     Returns:
         list[dict]: List of all project records as dictionaries.
     """
@@ -370,7 +370,7 @@ def get_project_owner_id(project_id: str) -> str | None:
 
 def update_project_description(user_id: str, project_id: str, new_description: str):
     """
-    Update the project owned by the current user description (prompt) for the given project_id.
+    Update the description of the specified project for the given user.
     Args:
         user_id (str): Identifier of the authenticated user.
         project_id (str): The project ID.

@@ -168,7 +168,7 @@ def update_papers_for_project(queries: list[str], project_id: str) -> str:
             )
             return "Paper database updated partially: failed to store queries because the project owner could not be resolved."
 
-        status_queries = add_queries_to_project_db(owner_id, queries, project_id)
+        status_queries = add_queries_to_project_db(owner_id, project_id, queries)
 
         logger.info(f"Updated queries for project {project_id}")
 
