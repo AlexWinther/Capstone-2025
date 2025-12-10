@@ -1,5 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { useEffect, useState } from "react";
+import { setClerkTokenGetter } from "./lib/api";
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import CreateProject from "./pages/CreateProject";
@@ -15,6 +18,87 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const [clerkPublishableKey, setClerkPublishableKey] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch Clerk config from backend with retry logic
+    let retries = 3;
+    let delay = 1000;
+
+    const fetchConfig = async (attempt: number) => {
+      try {
+        const response = await fetch("/api/clerk-config", {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.publishableKey) {
+          setClerkPublishableKey(data.publishableKey);
+          setConfigError(null);
+        } else {
+          throw new Error("No publishable key in response");
+        }
+      } catch (err) {
+        console.error(`Failed to load Clerk config (attempt ${attempt}):`, err);
+        
+        if (attempt < retries) {
+          // Retry with exponential backoff
+          setTimeout(() => fetchConfig(attempt + 1), delay);
+          delay *= 2;
+        } else {
+          setConfigError(err instanceof Error ? err.message : "Failed to load Clerk configuration");
+        }
+      }
+    };
+
+    fetchConfig(1);
+  }, []);
+
+  // Show loading or error while fetching Clerk config
+  if (!clerkPublishableKey) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        {configError ? (
+          <>
+            <p className="text-red-600">Error: {configError}</p>
+            <p className="text-text-muted text-sm">Make sure the backend is running on port 80</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light"
+            >
+              Retry
+            </button>
+          </>
+        ) : (
+          <p className="text-text-muted">Loading Clerk configuration...</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <ClerkProvider 
+      publishableKey={clerkPublishableKey}
+    >
+      <AppWithAuth />
+    </ClerkProvider>
+  );
+}
+
+// Inner component to access Clerk hooks
+function AppWithAuth() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    // Set up token getter for API client
+    setClerkTokenGetter(() => getToken());
+  }, [getToken]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

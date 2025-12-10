@@ -5,9 +5,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="main-content">
-        <Outlet />
-      </main>
+      <Outlet />
     </div>
   );
 }

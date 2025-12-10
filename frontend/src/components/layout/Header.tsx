@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { UserButton } from "@clerk/clerk-react";
 
 export default function Header() {
   return (
@@ -18,7 +19,7 @@ export default function Header() {
         >
           Start a New Project
         </Link>
-        <div id="clerk-user-button"></div>
+        <UserButton />
       </div>
     </header>
   );

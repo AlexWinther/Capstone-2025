@@ -10,8 +10,9 @@ export function useProjects() {
     queryKey: ['projects'],
     queryFn: async () => {
       const response = await projectsApi.getAll();
-      if (response.success && response.projects) {
-        return response.projects;
+      if (response.success) {
+        // Return empty array if projects is undefined or null
+        return response.projects || [];
       }
       throw new Error(response.error || 'Failed to fetch projects');
     },
