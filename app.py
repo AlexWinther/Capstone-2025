@@ -61,9 +61,17 @@ from paper_handling.paper_handler import (
 from pubsub.pubsub_main import update_newsletter_papers
 from pubsub.pubsub_params import DAYS_FOR_UPDATE
 from utils.status import Status
+from config import (
+    TEST_MODE,
+    CLERK_SECRET_KEY,
+    CLERK_PUBLISHABLE_KEY,
+    CLERK_FRONTEND_API_URL,
+    HOSTNAME,
+    validate_required_env_vars,
+)
 
 # Only import Clerk if not in test mode
-if os.getenv("TEST_MODE") != "true":
+if not TEST_MODE:
     from clerk_backend_api import Clerk
     from clerk_backend_api.security.types import AuthenticateRequestOptions
 else:
@@ -127,10 +135,10 @@ class AgentSession:
 
 
 # Initialize Clerk only if not in test mode
-if os.getenv("TEST_MODE") == "true":
+if TEST_MODE:
     clerk_sdk = None
 else:
-    clerk_sdk = Clerk(bearer_auth=os.getenv("CLERK_SECRET_KEY"))
+    clerk_sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
 
 
 @app.before_request
@@ -146,7 +154,7 @@ def authenticate_user():
         return
 
     # In test mode, bypass Clerk and set a test user
-    if os.getenv("TEST_MODE") == "true":
+    if TEST_MODE:
         request.auth = {
             "user_id": "test_user_id",
             "username": "test_user",
@@ -246,8 +254,8 @@ def home():
         "dashboard.html",
         auth=request.auth,
         showCreateProjectButton=True,
-        CLERK_PUBLISHABLE_KEY=os.getenv("CLERK_PUBLISHABLE_KEY"),
-        CLERK_FRONTEND_API_URL=os.getenv("CLERK_FRONTEND_API_URL"),
+        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
+        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
     )
 
 
@@ -278,8 +286,8 @@ def create_project_page():
     return render_template(
         "create_project.html",
         auth=request.auth,
-        CLERK_PUBLISHABLE_KEY=os.getenv("CLERK_PUBLISHABLE_KEY"),
-        CLERK_FRONTEND_API_URL=os.getenv("CLERK_FRONTEND_API_URL"),
+        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
+        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
     )
 
 
@@ -296,8 +304,8 @@ def project_overview_page(project_id):
         return render_template(
             "dashboard.html",
             auth=None,
-            CLERK_PUBLISHABLE_KEY=os.getenv("CLERK_PUBLISHABLE_KEY"),
-            CLERK_FRONTEND_API_URL=os.getenv("CLERK_FRONTEND_API_URL"),
+            CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
+            CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
         )
 
     user_id = request.auth["user_id"]
@@ -311,8 +319,8 @@ def project_overview_page(project_id):
         "project_overview.html",
         project_id=project_id,
         auth=request.auth,
-        CLERK_PUBLISHABLE_KEY=os.getenv("CLERK_PUBLISHABLE_KEY"),
-        CLERK_FRONTEND_API_URL=os.getenv("CLERK_FRONTEND_API_URL"),
+        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
+        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
     )
 
 
@@ -997,24 +1005,7 @@ def load_more_papers():
 
 
 if __name__ == "__main__":
-    if not os.getenv("CLERK_SECRET_KEY"):
-        raise ValueError(
-            "CLERK_SECRET_KEY environment variable is required for authentication."
-        )
-
-    if not os.getenv("CLERK_PUBLISHABLE_KEY"):
-        raise ValueError(
-            "CLERK_PUBLISHABLE_KEY environment variable is required for authentication."
-        )
-
-    if not os.getenv("CLERK_FRONTEND_API_URL"):
-        raise ValueError(
-            "CLERK_FRONTEND_API_URL environment variable is required for authentication."
-        )
-
-    if not os.getenv("HOSTNAME"):
-        raise ValueError(
-            "HOSTNAME environment variable is required for authentication."
-        )
+    # Validate required environment variables
+    validate_required_env_vars()
 
     app.run(host="0.0.0.0", debug=True, port=80)  # nosec B201, B104
