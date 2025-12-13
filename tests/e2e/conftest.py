@@ -99,7 +99,7 @@ def flask_server(enable_test_mode):
     # Use a dynamic port if preferred port is taken
     preferred_port = 5556
     test_port = preferred_port
-    
+
     def find_free_port(start_port, max_attempts=10):
         """Find an available port starting from start_port."""
         for port in range(start_port, start_port + max_attempts):
@@ -109,14 +109,16 @@ def flask_server(enable_test_mode):
                     return port
                 except OSError:
                     continue
-        raise RuntimeError(f"Could not find free port in range {start_port}-{start_port + max_attempts}")
+        raise RuntimeError(
+            f"Could not find free port in range {start_port}-{start_port + max_attempts}"
+        )
 
     test_port = find_free_port(preferred_port)
-    
+
     # Flag to track server status
     server_started = threading.Event()
     server_error = []
-    
+
     def run_app():
         try:
             app.config["TESTING"] = True

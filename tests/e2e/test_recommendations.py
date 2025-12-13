@@ -90,7 +90,7 @@ class TestRecommendationsFlow:
         citations_text = first_paper.text_content()
         has_citations = "Citations" in citations_text
         has_fwci = "FWCI" in citations_text
-        
+
         assert has_citations or has_fwci, (
             "At least one citation metric (Citations or FWCI) should be present"
         )
