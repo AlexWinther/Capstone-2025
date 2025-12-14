@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { setClerkTokenGetter } from "./lib/api";
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -92,12 +92,25 @@ function App() {
 
 // Inner component to access Clerk hooks
 function AppWithAuth() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
+  const [isTokenReady, setIsTokenReady] = useState(false);
 
-  useEffect(() => {
-    // Set up token getter for API client
-    setClerkTokenGetter(() => getToken());
-  }, [getToken]);
+  // Use layout effect to set token getter synchronously before render
+  useLayoutEffect(() => {
+    if (isLoaded && getToken) {
+      setClerkTokenGetter(getToken);
+      setIsTokenReady(true);
+    }
+  }, [getToken, isLoaded]);
+
+  // Wait until Clerk is loaded and token getter is set
+  if (!isLoaded || !isTokenReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-text-muted">Loading authentication...</p>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

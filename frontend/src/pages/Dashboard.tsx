@@ -3,7 +3,6 @@ import { useAuth } from "@clerk/clerk-react";
 import { SignIn } from "@clerk/clerk-react";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/project/ProjectCard";
-import { Input } from "@/components/ui/input";
 import type { Project } from "@/types";
 
 /**
@@ -137,25 +136,25 @@ export default function Dashboard() {
     <main className="main-content">
       {/* Search Bar */}
       {showSearchBar && (
-        <div className="flex justify-center mb-8">
-          <Input
+        <div className="search-bar-wrapper">
+          <input
             type="text"
             placeholder="Search by tag or keyword..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-[440px] rounded-3xl px-7 py-4 text-[1.13rem] font-medium"
+            className="search-bar"
           />
         </div>
       )}
 
       {/* Empty State - No Projects */}
       {showEmptyState && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-5 py-16 text-center opacity-0 translate-y-5 animate-[fadeInUp_0.6s_ease-out_forwards]">
-          <div className="text-6xl text-text-light mb-0 opacity-60">📁</div>
-          <h2 className="text-3xl font-semibold text-[#495057] mb-4 tracking-[0.5px]">
+        <div className="no-projects-container">
+          <div className="no-projects-icon">📁</div>
+          <h2 className="no-projects-title">
             There are no projects yet.
           </h2>
-          <p className="text-lg text-text-light leading-relaxed max-w-md mx-auto">
+          <p className="no-projects-subtitle">
             Start your first project to begin exploring research papers and getting personalized recommendations.
           </p>
         </div>
@@ -165,7 +164,7 @@ export default function Dashboard() {
       {!showEmptyState && (
         <div
           ref={projectsListRef}
-          className="projects-list grid grid-cols-1 md:grid-cols-2 gap-10 px-8 pb-16 max-w-[1200px] mx-auto min-h-[60vh] justify-items-stretch items-stretch"
+          className="projects-list"
         >
           {showNoResults ? (
             <div className="col-span-2 text-center text-text-light py-10 text-lg">

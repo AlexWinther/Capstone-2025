@@ -2,10 +2,12 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  onValueChange?: (value: string) => void;
+}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, onValueChange, ...props }, ref) => {
     return (
       <select
         className={cn(
@@ -15,6 +17,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           className
         )}
         ref={ref}
+        onChange={(e) => {
+          props.onChange?.(e);
+          onValueChange?.(e.target.value);
+        }}
         {...props}
       >
         {children}
@@ -24,5 +30,13 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 );
 Select.displayName = "Select";
 
-export { Select };
+// Compatibility wrappers for Radix-style API
+const SelectTrigger = Select;
+const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SelectValue = ({ placeholder }: { placeholder?: string }) => <option value="">{placeholder}</option>;
+const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => (
+  <option value={value}>{children}</option>
+);
+
+export { Select, SelectTrigger, SelectContent, SelectValue, SelectItem };
 

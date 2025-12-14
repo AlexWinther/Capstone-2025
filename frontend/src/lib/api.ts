@@ -43,7 +43,7 @@ async function getFetchOptions(options: RequestInit = {}): Promise<RequestInit> 
       if (token) {
         // Some backends support both cookie and header auth
         // Adding it as a fallback, but cookies should be primary
-        headers['Authorization'] = `Bearer ${token}`;
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
       }
     } catch (err) {
       // Token fetch failed, but cookies might still work
