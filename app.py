@@ -109,21 +109,31 @@ def authenticate_user():
 
     try:
         # Authenticate the request using Clerk
-        hostname = os.getenv("HOSTNAME")
-        # Clean hostname (remove protocol if present)
-        if hostname:
-            hostname = hostname.replace("http://", "").replace("https://", "").split(":")[0]
-            auth_options = AuthenticateRequestOptions(authorized_parties=[hostname])
-        else:
-            auth_options = AuthenticateRequestOptions()
+        # For local development, don't restrict authorized_parties
+        auth_options = AuthenticateRequestOptions()
+
+        # Debug logging
+        auth_header = request.headers.get("Authorization", "None")
+        logger.info(f"Auth attempt for {request.path}")
+        logger.info(f"Authorization header present: {auth_header != 'None'}")
 
         request_state = clerk_sdk.authenticate_request(request, auth_options)
+        logger.info(f"Auth state - is_signed_in: {request_state.is_signed_in}")
+        logger.info(f"Auth state - status: {request_state.status}")
+        logger.info(f"Auth state - reason: {request_state.reason}")
+        
+        # Debug token details if available
+        if hasattr(request_state, 'token') and request_state.token:
+            logger.info(f"Token found: {type(request_state.token)}")
+            if hasattr(request_state.token, 'azp'):
+                logger.info(f"Token azp (authorized party): {request_state.token.azp}")
 
     except Exception as e:
         # Log the error and set default values for unauthenticated requests
         logger.error(f"Authentication error for {request.path}: {e}")
-        logger.error(f"Request headers: {dict(request.headers)}")
-        logger.error(f"Request cookies: {dict(request.cookies)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         request.auth = None
         return
 
@@ -152,6 +162,7 @@ def authenticate_user():
             logging.error(f"Error fetching user info from Clerk:\n{e}")
 
     else:
+        logger.warning(f"Not signed in - status: {request_state.status}, reason: {request_state.reason}")
         request.auth = None
 
 
