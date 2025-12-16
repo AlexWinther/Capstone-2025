@@ -1,4 +1,4 @@
-# Capstone-2025: Agentic Paper Recommendation System
+# Capstone-2026: Agentic Paper Recommendation System
 
 A modular, extensible agentic academic paper recommendation system leveraging LLMs, vector search, and modern backend best practices. Designed for multi-step reasoning, project-specific recommendations, and robust filtering, with a focus on maintainability and extensibility.
 
@@ -59,7 +59,7 @@ Capstone-2025/
 
 ### System Architecture
 
-The Capstone-2025 project is a modular, extensible academic paper recommendation system that leverages LLMs, vector search, and modern backend best practices. The system is designed for multi-step reasoning, project-specific recommendations, and robust filtering, with a focus on maintainability and extensibility.
+The Capstone-2026 project is a modular, extensible academic paper recommendation system that leverages LLMs, vector search, and modern backend best practices. The system is designed for multi-step reasoning, project-specific recommendations, and robust filtering, with a focus on maintainability and extensibility.
 
 #### **Key Components**
 - **Flask API (`app.py`)**: Exposes REST endpoints for project management, recommendations, ratings, newsletter, and PDF extraction. Orchestrates the agent and handles all frontend/backend communication.
