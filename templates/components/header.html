@@ -11,11 +11,16 @@
             </span>
             <h1>Capstone 2025</h1>
         </a>
+     </div>
+    <div class="nav-version-badge">
+        Version: {{ APP_VERSION }}
     </div>
-    <div class="header-actions">
-        {% if auth and showCreateProjectButton %}
-        <button id="createProjectBtn" class="btn btn-primary create-project-cta">Start a New Project</button>
-        {% endif %}
-        <div id="clerk-user-button"></div>
-    </div>
-</header>
+
+     <div class="header-actions">
+         {% if auth and showCreateProjectButton %}
+         <button id="createProjectBtn" class="btn btn-primary create-project-cta">Start a New Project</button>
+         {% endif %}
+         <div id="clerk-user-button"></div>
+     </div>
+ </header>
+
