@@ -20,7 +20,7 @@ export PGROLL_PG_URL="postgres://${DB_USER:-user}:${DB_PASSWORD:-password}@${DB_
 pgroll init || true
 
 # Run all migrations
-pgroll migrate migrations/ --complete
+pgroll migrate migrations/
 
 echo "Migrations complete!"
 
