@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class RetrievePapersNode(BaseNode[AgentState, AgentDeps]):
     """Pulls a lightweight candidate set using the mock toolbelt."""
 

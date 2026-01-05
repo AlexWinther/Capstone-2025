@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class NoResultsNode(BaseNode[AgentState, AgentDeps, AgentOutput]):
     """Return a structured no-results payload."""
 

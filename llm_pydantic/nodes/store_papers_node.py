@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class StorePapersNode(BaseNode[AgentState, AgentDeps, AgentOutput]):
     """Persist (mock) recommendations and finish the run."""
 

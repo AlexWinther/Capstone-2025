@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class ScopeCheckNode(BaseNode[AgentState, AgentDeps]):
     """Gate-keep obvious out-of-scope user queries."""
 

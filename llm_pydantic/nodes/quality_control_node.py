@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class QualityControlNode(BaseNode[AgentState, AgentDeps]):
     """Leans on the mock toolbelt to sanity-check the query."""
 

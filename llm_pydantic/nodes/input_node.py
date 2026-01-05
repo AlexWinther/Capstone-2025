@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class InputNode(BaseNode[AgentState, AgentDeps]):
     """Parse the raw query and collect lightweight metadata."""
 

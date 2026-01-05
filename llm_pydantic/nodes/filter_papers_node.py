@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class FilterPapersNode(BaseNode[AgentState, AgentDeps]):
     """Apply natural language style filters to the candidates."""
 

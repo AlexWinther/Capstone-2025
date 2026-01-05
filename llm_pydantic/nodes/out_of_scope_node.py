@@ -8,7 +8,7 @@ from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
-@dataclass(slots=True)
+@dataclass()
 class OutOfScopeNode(BaseNode[AgentState, AgentDeps, AgentOutput]):
     """Produce a friendly message when a query is rejected."""
 
