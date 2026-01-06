@@ -98,8 +98,13 @@ def main() -> None:
     # Test no results case
     # run_test("Machine learning for healthcare after 2050")
 
-    # Test no results case
-    run_test("Please generate 50 non-research-related jokes.")
+    # Test out of scope case
+    # run_test("Please generate 50 non-research-related jokes.")
+
+    # Test split query case
+    run_test(
+        "What are the latest advancements in quantum computing and the impact of AI on healthcare?"
+    )
 
 
 if __name__ == "__main__":
