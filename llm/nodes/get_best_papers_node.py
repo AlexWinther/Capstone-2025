@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 @node_logger(
     "get_best_papers",
     input_keys=["project_id", "has_filter_instructions"],
-    output_keys=["papers_raw"],
+    output_keys=["papers_raw", "error"],
 )
 def get_best_papers_node(state):
     """

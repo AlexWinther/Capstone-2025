@@ -5,7 +5,8 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, End, GraphRunContext
 
-from llm_pydantic.state import AgentState
+from llm.nodes.store_papers_for_project_node import store_papers_for_project_node
+from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 
@@ -19,7 +20,30 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
 
         print("store_papers_for_project_node: called")
 
-        store_result = state.get("store_papers_result", "No result")
+        # taken from llm\StategraphAgent.py l177 to 189
+        # Final step: store papers for project
+        print(
+            {
+                "thought": "Storing recommended papers for this project...",
+                "is_final": False,
+                "final_content": None,
+            }
+        )
+        new_state = store_papers_for_project_node(
+            {
+                "project_id": state.project_id,
+                "papers_filtered": state.papers_filtered,
+                "papers_raw": state.papers_raw,
+                "user_query": state.user_query,
+            }
+        )
+
+        state.store_papers_for_project_result = new_state.get(
+            "store_papers_for_project_result"
+        )
+
+        # corrected key name, this was wrong in the stategraph before
+        store_result = state.store_papers_for_project_result
         print(
             {
                 "thought": "Agent workflow complete.",
@@ -28,4 +52,4 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        return End()
+        return End(AgentOutput(status="finished"))

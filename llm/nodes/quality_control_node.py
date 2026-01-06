@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
         "qc_tool_result",
         "keywords",
         "has_filter_instructions",
+        "error",
     ],
 )
 def quality_control_node(state):

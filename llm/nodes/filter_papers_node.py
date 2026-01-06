@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 @node_logger(
     "filter_papers",
     input_keys=["user_query", "papers_raw", "has_filter_instructions"],
-    output_keys=["papers_filtered"],
+    output_keys=["papers_filtered", "applied_filter_criteria", "error"],
 )
 def filter_papers_node(state):
     """

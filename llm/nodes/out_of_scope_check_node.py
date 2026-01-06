@@ -5,7 +5,9 @@ from llm.tools.Tools_aggregator import get_tools
 
 
 @node_logger(
-    "out_of_scope_check", input_keys=["user_query"], output_keys=["out_of_scope_result"]
+    "out_of_scope_check",
+    input_keys=["user_query"],
+    output_keys=["out_of_scope_result", "error"],
 )
 def out_of_scope_check_node(state):
     """

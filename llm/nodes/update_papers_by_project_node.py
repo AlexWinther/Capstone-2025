@@ -12,8 +12,15 @@ logger.setLevel(logging.INFO)
 
 @node_logger(
     "update_papers_by_project",
-    input_keys=["user_query", "qc_decision", "qc_tool_result", "project_id"],
-    output_keys=["update_papers_by_project_result"],
+    input_keys=[
+        "user_query",
+        "qc_decision",
+        "qc_tool_result",
+        "project_id",
+        "subqueries",
+        "keywords",
+    ],
+    output_keys=["update_papers_by_project_result", "all_papers", "error"],
 )
 def update_papers_by_project_node(state):
     """
@@ -61,7 +68,8 @@ def update_papers_by_project_node(state):
                         queries = qc_result["result"]["refined_keywords"]
                     elif "reformulated_description" in qc_result:
                         queries = [qc_result["reformulated_description"]]
-                except Exception:
+                except Exception as e:
+                    print(e)
                     queries = [state.get("user_query", "")]
             elif state.get("qc_decision") == "split" and state.get("qc_tool_result"):
                 # Should not happen, handled above

@@ -9,7 +9,12 @@ from llm.tools.Tools_aggregator import get_tools
 
 @node_logger(
     "no_results_handler",
-    input_keys=["user_query", "papers_raw", "papers_filtered"],
+    input_keys=[
+        "user_query",
+        "papers_raw",
+        "papers_filtered",
+        "applied_filter_criteria",
+    ],
     output_keys=["no_results_message"],
 )
 def no_results_handler_node(state):

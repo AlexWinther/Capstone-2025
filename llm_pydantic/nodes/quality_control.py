@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, GraphRunContext
 
+from llm.nodes.quality_control_node import quality_control_node
 from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
@@ -20,6 +21,7 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
 
         print("quality_control_node: called")
 
+        # taken from llm\StategraphAgent.py l88 to 128
         # Step 3: Quality control
         print(
             {
@@ -29,11 +31,24 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
             }
         )
 
+        new_state = quality_control_node(
+            {
+                "user_query": state.user_query,
+                "out_of_scope_result": state.out_of_scope_result,
+                "keywords": state.keywords,
+            }
+        )
+
+        state.qc_decision = new_state.get("qc_decision", "accept")
+        state.qc_tool_result = new_state.get("qc_tool_result", None)
+        state.keywords = new_state.get("keywords", [])
+        state.has_filter_instructions = new_state.get("has_filter_instructions", None)
+        state.error = new_state.get("error", None)
         qc_decision = state.qc_decision
 
         # Check if query is out of scope
+        qc_decision = state.qc_decision
         if qc_decision == "out_of_scope":
-            print("quality_control_node: query is out of scope")
             print(
                 {
                     "thought": "Query determined to be out of scope. Generating explanation...",
@@ -45,7 +60,6 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
 
         # If split, expand subqueries
         if qc_decision == "split":
-            print("quality_control_node: splitting query into subqueries")
             print(
                 {
                     "thought": "Splitting query into subqueries...",

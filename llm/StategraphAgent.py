@@ -18,7 +18,7 @@ The agent is designed to be modular, extensible, and easy to debug or extend for
 import json
 import logging
 
-# --- State schema ---
+# --- State schema (incomplete) ---
 # The state is a dict with the following keys:
 # - user_query: str
 # - keywords: list[str] (optional)
@@ -27,16 +27,16 @@ import logging
 # - papers_filtered: list[dict] (optional)
 # - final_output: dict (optional)
 
-from nodes.input_node import input_node  # noqa: E402  # isort:skip
-from nodes.out_of_scope_check_node import out_of_scope_check_node  # noqa: E402  # isort:skip
-from nodes.out_of_scope_handler_node import out_of_scope_handler_node  # noqa: E402  # isort:skip
-from nodes.quality_control_node import quality_control_node  # noqa: E402  # isort:skip
-from nodes.expand_subqueries_node import expand_subqueries_node  # noqa: E402  # isort:skip
-from nodes.get_best_papers_node import get_best_papers_node  # noqa: E402  # isort:skip
-from nodes.update_papers_by_project_node import update_papers_by_project_node  # noqa: E402  # isort:skip
-from nodes.filter_papers_node import filter_papers_node  # noqa: E402  # isort:skip
-from nodes.no_results_handler_node import no_results_handler_node  # noqa: E402  # isort:skip
-from nodes.store_papers_for_project_node import store_papers_for_project_node  # noqa: E402  # isort:skip
+from llm.nodes.input_node import input_node  # noqa: E402  # isort:skip
+from llm.nodes.out_of_scope_check_node import out_of_scope_check_node  # noqa: E402  # isort:skip
+from llm.nodes.out_of_scope_handler_node import out_of_scope_handler_node  # noqa: E402  # isort:skip
+from llm.nodes.quality_control_node import quality_control_node  # noqa: E402  # isort:skip
+from llm.nodes.expand_subqueries_node import expand_subqueries_node  # noqa: E402  # isort:skip
+from llm.nodes.get_best_papers_node import get_best_papers_node  # noqa: E402  # isort:skip
+from llm.nodes.update_papers_by_project_node import update_papers_by_project_node  # noqa: E402  # isort:skip
+from llm.nodes.filter_papers_node import filter_papers_node  # noqa: E402  # isort:skip
+from llm.nodes.no_results_handler_node import no_results_handler_node  # noqa: E402  # isort:skip
+from llm.nodes.store_papers_for_project_node import store_papers_for_project_node  # noqa: E402  # isort:skip
 
 logger = logging.getLogger("StategraphAgent")
 logger.setLevel(logging.INFO)
