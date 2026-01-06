@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, GraphRunContext
 
-from llm.nodes.out_of_scope_check_node import out_of_scope_check_node
+from llm.nodes.out_of_scope_check import out_of_scope_check_node
 from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 

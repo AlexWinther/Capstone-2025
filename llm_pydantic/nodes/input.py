@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, GraphRunContext
 
-from llm.nodes.input_node import input_node
+from llm.nodes.input import input_node
 from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 
