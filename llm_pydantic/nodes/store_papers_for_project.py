@@ -14,11 +14,17 @@ from llm_pydantic.tooling.tooling_mock import AgentDeps
 class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
     """StorePapersForProjectNode."""
 
-    async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> End:
-        state = ctx.state
-        deps = ctx.deps
-
+    async def run(
+        self, ctx: GraphRunContext[AgentState, AgentDeps]
+    ) -> End[AgentOutput | None]:  # ty:ignore[invalid-method-override]
         print("store_papers_for_project_node: called")
+
+        state = {
+            "project_id": ctx.state.project_id,
+            "papers_filtered": ctx.state.papers_filtered,
+            "papers_raw": ctx.state.papers_raw,
+            "user_query": ctx.state.user_query,
+        }
 
         # taken from llm\StategraphAgent.py l177 to 189
         # Final step: store papers for project
@@ -29,21 +35,14 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
                 "final_content": None,
             }
         )
-        new_state = store_papers_for_project_node(
-            {
-                "project_id": state.project_id,
-                "papers_filtered": state.papers_filtered,
-                "papers_raw": state.papers_raw,
-                "user_query": state.user_query,
-            }
-        )
+        state = store_papers_for_project_node(state)
 
-        state.store_papers_for_project_result = new_state.get(
+        ctx.state.store_papers_for_project_result = state.get(
             "store_papers_for_project_result"
         )
 
         # corrected key name, this was wrong in the stategraph before
-        store_result = state.store_papers_for_project_result
+        store_result = ctx.state.store_papers_for_project_result
         print(
             {
                 "thought": "Agent workflow complete.",

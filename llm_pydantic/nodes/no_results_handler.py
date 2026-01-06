@@ -14,25 +14,23 @@ from llm_pydantic.tooling.tooling_mock import AgentDeps
 class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
     """NoResultsHandlerNode."""
 
-    async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> End:
-        state = ctx.state
-        deps = ctx.deps
-
+    async def run(
+        self, ctx: GraphRunContext[AgentState, AgentDeps]
+    ) -> End[AgentOutput]:  # ty:ignore[invalid-method-override]
         print("no_results_handler_node: called")
 
+        state = {
+            "user_query": ctx.state.user_query,
+            "papers_raw": ctx.state.all_papers,
+            "papers_filtered": ctx.state.papers_filtered,
+            "applied_filter_criteria": ctx.state.subqueries,
+        }
+
         # taken from llm\StategraphAgent.py l162 to 175
-        new_state = no_results_handler_node(
-            {
-                "user_query": state.user_query,
-                "papers_raw": state.all_papers,
-                "papers_filtered": state.papers_filtered,
-                "applied_filter_criteria": state.subqueries,
-            }
-        )
+        state = no_results_handler_node(state)
 
-        state.no_results_message = new_state.get("no_results_message", "")
-
-        no_results_message = state.no_results_message
+        ctx.state.no_results_message = state.get("no_results_message", "")
+        no_results_message = ctx.state.no_results_message
         print(
             {
                 "thought": "No papers found. Please try broadening your search or adjusting your filter.",

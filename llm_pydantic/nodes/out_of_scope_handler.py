@@ -14,11 +14,15 @@ from llm.nodes.out_of_scope_handler_node import out_of_scope_handler_node  # noq
 class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
     """OutOfScopeHandlerNode."""
 
-    async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> End:
-        state = ctx.state
-        deps = ctx.deps
-
+    async def run(
+        self, ctx: GraphRunContext[AgentState, AgentDeps]
+    ) -> End[AgentOutput]:  # ty:ignore[invalid-method-override]
         print("out_of_scope_handler_node: called")
+
+        state = {
+            "user_query": ctx.state.user_query,
+            "qc_decision_reason": ctx.state.qc_decision,
+        }
 
         # taken from llm\StategraphAgent.py l99 to 119
         print(
@@ -29,19 +33,14 @@ class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        new_state = out_of_scope_handler_node(
-            {
-                "user_query": state.user_query,
-                "qc_decision_reason": state.qc_decision,
-            }
-        )
+        state = out_of_scope_handler_node()
 
-        state.out_of_scope_message = new_state.get("out_of_scope_message")
-        state.requires_user_input = new_state.get("requires_user_input", True)
-        state.error = new_state.get("error")
+        ctx.state.out_of_scope_message = state.get("out_of_scope_message")
+        ctx.state.requires_user_input = state.get("requires_user_input", True)
+        ctx.state.error = state.get("error")
 
         # Return out-of-scope message
-        out_of_scope_message = state.out_of_scope_message
+        out_of_scope_message = ctx.state.out_of_scope_message
         print(
             {
                 "thought": "Query rejected as out of scope. Please provide a new query.",

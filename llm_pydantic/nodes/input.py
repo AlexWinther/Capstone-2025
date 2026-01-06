@@ -16,14 +16,14 @@ class Input(BaseNode[AgentState, AgentDeps]):
     user_message: str
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> OutOfScopeCheck:
-        state = ctx.state
-        deps = ctx.deps
-
         print("input_node: called")
 
         # Initialize state
-        state.user_query = self.user_message
+        ctx.state.user_query = self.user_message
 
+        state = {
+            "user_query": self.user_message,
+        }
         # Step 1: Input node
         print(
             {
@@ -32,15 +32,12 @@ class Input(BaseNode[AgentState, AgentDeps]):
                 "final_content": None,
             }
         )
-        new_state = input_node(
-            {
-                "user_query": self.user_message,
-            }
-        )
 
-        state.user_query = new_state["user_query"]
-        state.project_id = new_state["project_id"]
-        state.keywords = new_state["keywords"]
+        state = input_node(state)
+
+        ctx.state.user_query = state["user_query"]
+        ctx.state.project_id = state["project_id"]
+        ctx.state.keywords = state["keywords"]
 
         return OutOfScopeCheck()
 

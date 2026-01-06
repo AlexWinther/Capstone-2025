@@ -14,10 +14,16 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
     """UpdatePapersByProjectNode."""
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> GetBestPapers:
-        state = ctx.state
-        deps = ctx.deps
-
         print("update_papers_by_project_node: called")
+
+        state = {
+            "user_query": ctx.state.user_query,
+            "qc_decision": ctx.state.qc_decision,
+            "qc_tool_result": ctx.state.qc_tool_result,
+            "project_id": ctx.state.project_id,
+            "subqueries": ctx.state.subqueries,
+            "keywords": ctx.state.keywords,
+        }
 
         # Step 5: Get best papers
         print(
@@ -27,23 +33,13 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
                 "final_content": None,
             }
         )
-        new_state = update_papers_by_project_node(
-            {
-                "user_query": state.user_query,
-                "qc_decision": state.qc_decision,
-                "qc_tool_result": state.qc_tool_result,
-                "project_id": state.project_id,
-                "subqueries": state.subqueries,
-                "keywords": state.keywords,
-            }
-        )
+        state = update_papers_by_project_node(state)
 
-        state.update_papers_by_project_result = new_state.get(
+        ctx.state.update_papers_by_project_result = state.get(
             "update_papers_by_project_result", None
         )
-        state.all_papers = new_state.get("all_papers", [])
-        state.error = new_state.get("error", None)
-
+        ctx.state.all_papers = state.get("all_papers", [])
+        ctx.state.error = state.get("error", None)
         return GetBestPapers()
 
 
