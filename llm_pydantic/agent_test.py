@@ -16,7 +16,10 @@ import logging
 from database.papers_database_handler import get_paper_by_hash
 from database.projectpaper_database_handler import get_papers_for_project
 from database.projects_database_handler import add_new_project_to_db
-from llm_pydantic.agent import trigger_stategraph_agent_show_thoughts
+from llm_pydantic.agent import build_agent_graph
+from llm_pydantic.nodes.input import Input
+from llm_pydantic.state import AgentState
+from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -48,32 +51,10 @@ def _abbreviate_title(text: str, max_length: int = 80) -> str:
     return text[: max_length - 3].rstrip() + "..."
 
 
-def run_agent_stream(user_query: str) -> None:
-    """Stream Stategraph agent updates to stdout for the given user query."""
-
-    print("Streaming agent thoughts (matches web UI)")
-    for idx, update in enumerate(
-        trigger_stategraph_agent_show_thoughts(user_query), start=1
-    ):
-        thought = update.get("thought", "(no thought provided)")
-        print(f"\nStep {idx}: {thought}")
-        final_content = update.get("final_content")
-        if final_content:
-            print("Payload:")
-            _print_payload(final_content)
-        if update.get("is_final"):
-            print("\nWorkflow complete.")
-            break
-
-
-def main() -> None:
-    """
-    Run a minimal CLI demo of the Stategraph agent backed by the project database.
-    This script needs the postgres database to be running, but no web app and no ChromaDB.
-    """
+def run_test(user_query: str) -> None:
+    """Run Pydantic agent for the given user query and print results."""
 
     user_id = "cli_test_user"
-    user_query = "Machine learning for healthcare after 2018"
 
     # Create a new project for this CLI session
     project_name = (
@@ -87,7 +68,11 @@ def main() -> None:
     final_query = f"{user_query} project ID: {project_id}"
     print("Using project:", project_id)
     print("User query:", final_query)
-    run_agent_stream(final_query)
+
+    graph = build_agent_graph()
+    state = AgentState()
+    deps = AgentDeps()
+    result = graph.run_sync(Input(user_message=final_query), state=state, deps=deps)
 
     project_papers = get_papers_for_project(project_id)
 
@@ -102,6 +87,19 @@ def main() -> None:
 
         paper_hash = entry.get("paper_hash", "N/A")
         print(f"{idx:2d}. {short_title} (hash {paper_hash[:8]}...)")
+
+
+def main() -> None:
+    """Run a minimal CLI demo of the Pydantic Stategraph agent."""
+
+    # Positive test case
+    # run_test("Machine learning for healthcare after 1918")
+
+    # Test no results case
+    # run_test("Machine learning for healthcare after 2050")
+
+    # Test no results case
+    run_test("Please generate 50 non-research-related jokes.")
 
 
 if __name__ == "__main__":
