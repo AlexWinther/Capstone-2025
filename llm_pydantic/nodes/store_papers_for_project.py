@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, End, GraphRunContext
 
-from llm.nodes.store_papers_for_project_node import store_papers_for_project_node
+from llm.nodes.store_papers_for_project import store_papers_for_project_node
 from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
 

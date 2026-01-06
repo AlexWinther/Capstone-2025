@@ -5,9 +5,10 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, End, GraphRunContext
 
-from llm_pydantic.state import AgentState, AgentOutput
+from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
-from llm.nodes.out_of_scope_handler_node import out_of_scope_handler_node  # noqa: E402  # isort:skip
+
+from llm.nodes.out_of_scope_handler import out_of_scope_handler_node  # noqa: E402  # isort:skip
 
 
 @dataclass()

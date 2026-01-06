@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, GraphRunContext
 
+from llm.nodes.expand_subqueries import expand_subqueries_node
 from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
-from llm.nodes.expand_subqueries_node import expand_subqueries_node
 
 
 @dataclass()
@@ -36,4 +36,6 @@ class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
         return UpdatePapersByProject()
 
 
-from llm_pydantic.nodes.update_papers_by_project import UpdatePapersByProject  # noqa: E402
+from llm_pydantic.nodes.update_papers_by_project import (  # noqa: E402
+    UpdatePapersByProject,
+)

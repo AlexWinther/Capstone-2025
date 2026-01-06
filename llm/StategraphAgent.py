@@ -27,16 +27,16 @@ import logging
 # - papers_filtered: list[dict] (optional)
 # - final_output: dict (optional)
 
-from llm.nodes.input_node import input_node  # noqa: E402  # isort:skip
-from llm.nodes.out_of_scope_check_node import out_of_scope_check_node  # noqa: E402  # isort:skip
-from llm.nodes.out_of_scope_handler_node import out_of_scope_handler_node  # noqa: E402  # isort:skip
-from llm.nodes.quality_control_node import quality_control_node  # noqa: E402  # isort:skip
-from llm.nodes.expand_subqueries_node import expand_subqueries_node  # noqa: E402  # isort:skip
-from llm.nodes.get_best_papers_node import get_best_papers_node  # noqa: E402  # isort:skip
-from llm.nodes.update_papers_by_project_node import update_papers_by_project_node  # noqa: E402  # isort:skip
-from llm.nodes.filter_papers_node import filter_papers_node  # noqa: E402  # isort:skip
-from llm.nodes.no_results_handler_node import no_results_handler_node  # noqa: E402  # isort:skip
-from llm.nodes.store_papers_for_project_node import store_papers_for_project_node  # noqa: E402  # isort:skip
+from llm.nodes.input import input_node  # noqa: E402  # isort:skip
+from llm.nodes.out_of_scope_check import out_of_scope_check_node  # noqa: E402  # isort:skip
+from llm.nodes.out_of_scope_handler import out_of_scope_handler_node  # noqa: E402  # isort:skip
+from llm.nodes.quality_control import quality_control_node  # noqa: E402  # isort:skip
+from llm.nodes.expand_subqueries import expand_subqueries_node  # noqa: E402  # isort:skip
+from llm.nodes.get_best_papers import get_best_papers_node  # noqa: E402  # isort:skip
+from llm.nodes.update_papers_by_project import update_papers_by_project_node  # noqa: E402  # isort:skip
+from llm.nodes.filter_papers import filter_papers_node  # noqa: E402  # isort:skip
+from llm.nodes.no_results_handler import no_results_handler_node  # noqa: E402  # isort:skip
+from llm.nodes.store_papers_for_project import store_papers_for_project_node  # noqa: E402  # isort:skip
 
 logger = logging.getLogger("StategraphAgent")
 logger.setLevel(logging.INFO)
