@@ -58,6 +58,9 @@ class AgentState:
     qc_tool_result: Optional[str] = None
     # used by: QualityControl, UpdatePapersByProject
 
+    requires_user_input: bool = False
+    # used by: OutOfScopeHandler
+
     store_papers_for_project_result: Any = None
     # used by: StorePapersForProject
 

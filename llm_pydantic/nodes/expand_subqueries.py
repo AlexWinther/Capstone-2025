@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from pydantic_graph import BaseNode, End, GraphRunContext
+from pydantic_graph import BaseNode, GraphRunContext
 
 from llm_pydantic.state import AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
@@ -13,12 +13,13 @@ from llm.nodes.expand_subqueries_node import expand_subqueries_node
 class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
     """ExpandSubqueriesNode."""
 
-    async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> End:
-        state = ctx.state
-
-        deps = ctx.deps
-
+    async def run(
+        self, ctx: GraphRunContext[AgentState, AgentDeps]
+    ) -> UpdatePapersByProject:
         print("expand_subqueries_node: called")
+        state = {
+            "qc_tool_result": ctx.state.qc_tool_result,
+        }
 
         # taken from llm\StategraphAgent.py l121 to 128
         print(
@@ -28,13 +29,9 @@ class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
                 "final_content": None,
             }
         )
-        new_state = expand_subqueries_node(
-            {
-                "qc_tool_result": state.qc_tool_result,
-            }
-        )
+        state = expand_subqueries_node(state)
 
-        state.subqueries = new_state.get("subqueries", None)
+        ctx.state.subqueries = state.get("subqueries", None)
 
         return UpdatePapersByProject()
 

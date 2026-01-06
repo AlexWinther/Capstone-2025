@@ -14,12 +14,12 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
     """GetBestPapersNode."""
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> FilterPapers:
-        state = ctx.state
-
-        deps = ctx.deps
-
         print("get_best_papers_node: called")
 
+        state = {
+            "project_id": ctx.state.project_id,
+            "has_filter_instructions": ctx.state.has_filter_instructions,
+        }
         # Step 5: Get best papers
         print(
             {
@@ -28,15 +28,11 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
                 "final_content": None,
             }
         )
-        new_state = get_best_papers_node(
-            {
-                "project_id": state.project_id,
-                "has_filter_instructions": state.has_filter_instructions,
-            }
-        )
 
-        state.papers_raw = new_state.get("papers_raw", [])
-        state.error = new_state.get("error", None)
+        state = get_best_papers_node(state)
+
+        ctx.state.papers_raw = state.get("papers_raw", [])
+        ctx.state.error = state.get("error", None)
 
         return FilterPapers()
 

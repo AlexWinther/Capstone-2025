@@ -16,10 +16,13 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
     async def run(
         self, ctx: GraphRunContext[AgentState, AgentDeps]
     ) -> OutOfScopeHandler | ExpandSubqueries | UpdatePapersByProject:
-        state = ctx.state
-        deps = ctx.deps
-
         print("quality_control_node: called")
+
+        state = {
+            "user_query": ctx.state.user_query,
+            "out_of_scope_result": ctx.state.out_of_scope_result,
+            "keywords": ctx.state.keywords,
+        }
 
         # taken from llm\StategraphAgent.py l88 to 128
         # Step 3: Quality control
@@ -31,23 +34,17 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        new_state = quality_control_node(
-            {
-                "user_query": state.user_query,
-                "out_of_scope_result": state.out_of_scope_result,
-                "keywords": state.keywords,
-            }
-        )
+        state = quality_control_node(state)
 
-        state.qc_decision = new_state.get("qc_decision", "accept")
-        state.qc_tool_result = new_state.get("qc_tool_result", None)
-        state.keywords = new_state.get("keywords", [])
-        state.has_filter_instructions = new_state.get("has_filter_instructions", None)
-        state.error = new_state.get("error", None)
-        qc_decision = state.qc_decision
+        ctx.state.qc_decision = state.get("qc_decision", "accept")
+        ctx.state.qc_tool_result = state.get("qc_tool_result", None)
+        ctx.state.keywords = state.get("keywords", [])
+        ctx.state.has_filter_instructions = state.get("has_filter_instructions", None)
+        ctx.state.error = state.get("error", None)
+        qc_decision = ctx.state.qc_decision
 
         # Check if query is out of scope
-        qc_decision = state.qc_decision
+        qc_decision = ctx.state.qc_decision
         if qc_decision == "out_of_scope":
             return OutOfScopeHandler()
 
