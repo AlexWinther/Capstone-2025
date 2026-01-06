@@ -15,8 +15,8 @@ This module implements the main agent workflow for academic paper recommendation
 The agent is designed to be modular, extensible, and easy to debug or extend for new research flows.
 """
 
-import logging
 import json
+import logging
 
 # --- State schema ---
 # The state is a dict with the following keys:
@@ -40,7 +40,6 @@ from nodes.store_papers_for_project_node import store_papers_for_project_node  #
 
 logger = logging.getLogger("StategraphAgent")
 logger.setLevel(logging.INFO)
-
 
 
 def trigger_stategraph_agent_show_thoughts(user_message: str):

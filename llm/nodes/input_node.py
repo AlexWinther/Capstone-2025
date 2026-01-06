@@ -4,7 +4,9 @@ from llm.nodes.node_logger import node_logger
 
 
 @node_logger(
-    "input_node", input_keys=["user_query"], output_keys=["user_query", "keywords"]
+    "input_node",
+    input_keys=["user_query"],
+    output_keys=["user_query", "keywords", "project_id"],
 )
 def input_node(state):
     """

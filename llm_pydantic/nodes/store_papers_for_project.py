@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, End, GraphRunContext
@@ -17,5 +18,14 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
         deps = ctx.deps
 
         print("store_papers_for_project_node: called")
+
+        store_result = state.get("store_papers_result", "No result")
+        print(
+            {
+                "thought": "Agent workflow complete.",
+                "is_final": True,
+                "final_content": json.dumps({"status": store_result}),
+            }
+        )
 
         return End()
