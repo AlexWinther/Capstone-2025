@@ -6,13 +6,33 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Literal
 
 if __package__ in (None, ""):
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-from llm_pydantic.agent import generate_mermaid_diagram
+from llm_pydantic.agent import Input, build_agent_graph
+
+
+def generate_mermaid_diagram(
+    *,
+    direction: Literal["TB", "BT", "LR", "RL"] = "LR",
+    save_path: str | Path | None = None,
+) -> str:
+    """Return the Mermaid `stateDiagram-v2` definition for this graph.
+
+    Optionally writes the diagram text to ``save_path`` so it can be visualised at
+    https://mermaid.live/ or committed with docs.
+    """
+
+    graph = build_agent_graph()
+    code = graph.mermaid_code(start_node=Input, direction=direction)
+    if save_path is not None:
+        path = Path(save_path)
+        path.write_text(code, encoding="utf-8")
+    return code
 
 
 def parse_args() -> argparse.Namespace:

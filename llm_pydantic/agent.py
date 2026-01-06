@@ -9,40 +9,41 @@ but is intentionally lightweight: every tool call is backed by the
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-from typing import Iterable, Literal
 
 from pydantic_graph import Graph
 
-from llm_pydantic.nodes.filter_papers_node import FilterPapersNode
-from llm_pydantic.nodes.input_node import InputNode
-from llm_pydantic.nodes.no_results_node import NoResultsNode
-from llm_pydantic.nodes.out_of_scope_node import OutOfScopeNode
-from llm_pydantic.nodes.quality_control_node import QualityControlNode
-from llm_pydantic.nodes.retrieve_papers_node import RetrievePapersNode
-from llm_pydantic.nodes.scope_node import ScopeCheckNode
-from llm_pydantic.nodes.store_papers_node import StorePapersNode
+from llm_pydantic.nodes.expand_subqueries import ExpandSubqueries
+from llm_pydantic.nodes.filter_papers import FilterPapers
+from llm_pydantic.nodes.get_best_papers import GetBestPapers
+from llm_pydantic.nodes.input import Input
+from llm_pydantic.nodes.no_results_handler import NoResultsHandler
+from llm_pydantic.nodes.out_of_scope_check import OutOfScopeCheck
+from llm_pydantic.nodes.out_of_scope_handler import OutOfScopeHandler
+from llm_pydantic.nodes.quality_control import QualityControl
+from llm_pydantic.nodes.store_papers_for_project import StorePapersForProject
+from llm_pydantic.nodes.update_papers_by_project import UpdatePapersByProject
 from llm_pydantic.state import AgentOutput, AgentState
 from llm_pydantic.tooling.tooling_mock import AgentDeps
-
-
-def _node_registry() -> Iterable[type]:
-    return (
-        InputNode,
-        ScopeCheckNode,
-        QualityControlNode,
-        RetrievePapersNode,
-        FilterPapersNode,
-        StorePapersNode,
-        NoResultsNode,
-        OutOfScopeNode,
-    )
 
 
 def build_agent_graph() -> Graph[AgentState, AgentDeps, AgentOutput]:
     """Create the reusable graph instance for callers/tests."""
 
-    return Graph(nodes=tuple(_node_registry()), state_type=AgentState)
+    return Graph(
+        nodes=(
+            ExpandSubqueries,
+            FilterPapers,
+            GetBestPapers,
+            Input,
+            NoResultsHandler,
+            OutOfScopeCheck,
+            OutOfScopeHandler,
+            QualityControl,
+            StorePapersForProject,
+            UpdatePapersByProject,
+        ),
+        state_type=AgentState,
+    )
 
 
 async def run_agent(
@@ -57,7 +58,7 @@ async def run_agent(
     run_state = state or AgentState()
     run_deps = deps or AgentDeps()
     result = await graph.run(
-        InputNode(user_message=user_message),
+        Input(user_message=user_message),
         state=run_state,
         deps=run_deps,
     )
@@ -73,22 +74,3 @@ def run_agent_sync(
     """Synchronous convenience wrapper for quick experiments."""
 
     return asyncio.run(run_agent(user_message, state=state, deps=deps))
-
-
-def generate_mermaid_diagram(
-    *,
-    direction: Literal["TB", "BT", "LR", "RL"] = "LR",
-    save_path: str | Path | None = None,
-) -> str:
-    """Return the Mermaid `stateDiagram-v2` definition for this graph.
-
-    Optionally writes the diagram text to ``save_path`` so it can be visualised at
-    https://mermaid.live/ or committed with docs.
-    """
-
-    graph = build_agent_graph()
-    code = graph.mermaid_code(start_node=InputNode, direction=direction)
-    if save_path is not None:
-        path = Path(save_path)
-        path.write_text(code, encoding="utf-8")
-    return code
