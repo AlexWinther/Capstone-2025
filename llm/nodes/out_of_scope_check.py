@@ -1,15 +1,31 @@
-from llm.nodes.node_logger import node_logger
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass
+
+from pydantic_graph import BaseNode, GraphRunContext
+
+from llm.node_logger import NodeLogger
+from llm.state import AgentState
 from llm.tools.Tools_aggregator import get_tools
+from llm_pydantic.tooling.tooling_mock import AgentDeps
+
+logger = logging.getLogger("OutOfScopeCheck")
+logger.setLevel(logging.WARNING)
 
 # --- Out-of-Scope Check Node ---
 
 
-@node_logger(
+node_logger = NodeLogger(
     "out_of_scope_check",
     input_keys=["user_query"],
     output_keys=["out_of_scope_result", "error"],
 )
-def out_of_scope_check_node(state):
+
+
+@dataclass()
+class OutOfScopeCheck(BaseNode[AgentState, AgentDeps]):
     """
     Detect if the user query is out of scope for academic paper recommendations.
     Args:
@@ -17,20 +33,68 @@ def out_of_scope_check_node(state):
     Returns:
         dict: Updated state with out_of_scope_result.
     """
-    # Get the detect_out_of_scope_query tool
-    tools = get_tools()
-    detect_out_of_scope_query = None
-    for tool in tools:
-        if hasattr(tool, "name") and tool.name == "detect_out_of_scope_query":
-            detect_out_of_scope_query = tool
-            break
-    if detect_out_of_scope_query is None:
-        state["error"] = "detect_out_of_scope_query tool not found"
-        return state
 
-    # Call the tool
-    result = detect_out_of_scope_query.invoke(
-        {"query_description": state["user_query"]}
-    )
-    state["out_of_scope_result"] = result
-    return state
+    async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> QualityControl:
+        print("out_of_scope_check_node: called")
+
+        state = {
+            "user_query": ctx.state.user_query,
+        }
+
+        # Step 2: Out-of-scope check
+        print(
+            {
+                "thought": "Checking if query is within scope...",
+                "is_final": False,
+                "final_content": None,
+            }
+        )
+
+        node_logger.log_begin(state)
+        # begin llm\nodes\out_of_scope_check.py
+        # Get the detect_out_of_scope_query tool
+        tools = get_tools()
+        detect_out_of_scope_query = None
+        for tool in tools:
+            if hasattr(tool, "name") and tool.name == "detect_out_of_scope_query":
+                detect_out_of_scope_query = tool
+                break
+        if detect_out_of_scope_query is None:
+            state["error"] = "detect_out_of_scope_query tool not found"
+            return state
+
+        # Call the tool
+        result = detect_out_of_scope_query.invoke(
+            {"query_description": state["user_query"]}
+        )
+        state["out_of_scope_result"] = result
+
+        # end llm\nodes\out_of_scope_check.py
+
+        node_logger.log_end(state)
+
+        ctx.state.out_of_scope_result = state["out_of_scope_result"]
+        ctx.state.error = state.get("error", None)
+
+        # taken from llm\StategraphAgent.py l73 to 86
+        # Extract keywords from out_of_scope_result if available
+        out_of_scope_result = ctx.state.out_of_scope_result
+        if out_of_scope_result:
+            try:
+                parsed = json.loads(out_of_scope_result)
+                if parsed.get("status") == "valid" and "keywords" in parsed:
+                    ctx.state.keywords = parsed["keywords"]
+                    print(
+                        {
+                            "thought": f"Extracted keywords: {ctx.state.keywords}",
+                            "is_final": False,
+                            "final_content": None,
+                        }
+                    )
+            except Exception as e:
+                logger.error(f"Error parsing out_of_scope_result: {e}")
+
+        return QualityControl()
+
+
+from llm.nodes.quality_control import QualityControl  # noqa: E402 # isort:skip
