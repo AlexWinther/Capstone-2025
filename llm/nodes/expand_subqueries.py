@@ -35,9 +35,7 @@ class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
         self, ctx: GraphRunContext[AgentState, AgentDeps]
     ) -> UpdatePapersByProject:
         print("expand_subqueries_node: called")
-        state = {
-            "qc_tool_result": ctx.state.qc_tool_result,
-        }
+        state = ctx.state
 
         # taken from llm\StategraphAgent.py l121 to 128
         print(
@@ -48,10 +46,10 @@ class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\expand_subqueries_node.py
-        qc_tool_result = state.get("qc_tool_result")
+        qc_tool_result = state.qc_tool_result
         subqueries = []
         if qc_tool_result:
             try:
@@ -70,13 +68,11 @@ class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
                         )
             except Exception as e:
                 logger.error(f"Error parsing subqueries: {e}")
-        state["subqueries"] = subqueries
+        state.subqueries = subqueries
         logger.info(f"Extracted {len(subqueries)} subqueries from split.")
         # end llm\nodes\expand_subqueries_node.py
 
-        node_logger.log_end(state)
-
-        ctx.state.subqueries = state.get("subqueries", None)
+        node_logger.log_end(state.__dict__)
 
         return UpdatePapersByProject()
 

@@ -33,10 +33,7 @@ class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
     ) -> End[AgentOutput]:  # ty:ignore[invalid-method-override]
         print("out_of_scope_handler_node: called")
 
-        state = {
-            "user_query": ctx.state.user_query,
-            "qc_decision_reason": ctx.state.qc_decision,
-        }
+        state = ctx.state
 
         # taken from llm\StategraphAgent.py l99 to 119
         print(
@@ -47,12 +44,14 @@ class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\out_of_scope_handler.py
-        user_query = state.get("user_query", "")
-        qc_decision_reason = state.get(
-            "qc_decision_reason", "The query was determined to be out of scope."
+        user_query = state.user_query
+        qc_decision_reason = (
+            state.qc_decision_reason
+            if state.qc_decision_reason
+            else "The query was determined to be out of scope."
         )
 
         # Generate explanation for why the query was rejected
@@ -103,33 +102,28 @@ class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
                 "suggestion": "Please provide a new query focused on academic research topics, technologies, or fields of study.",
             }
 
-            state["out_of_scope_message"] = out_of_scope_message
-            state["requires_user_input"] = True
+            state.out_of_scope_message = out_of_scope_message
+            state.requires_user_input = True
 
             logger.info(f"Out-of-scope query handled. Original query: '{user_query}'")
 
         except Exception as e:
             logger.error(f"Error in out_of_scope_handler_node: {e}")
-            state["error"] = f"Error handling out-of-scope query: {e}"
-            state["out_of_scope_message"] = {
+            state.error = f"Error handling out-of-scope query: {e}"
+            state.out_of_scope_message = {
                 "type": "out_of_scope",
                 "original_query": user_query,
                 "short_explanation": "Your query is out of scope. Please specify a research topic or field.",
                 "explanation": "The query was determined to be out of scope for academic paper recommendations. Please try a different query focused on research topics or academic fields.",
                 "suggestion": "Please provide a new query focused on academic research topics, technologies, or fields of study.",
             }
-            state["requires_user_input"] = True
+            state.requires_user_input = True
 
         # end llm\nodes\out_of_scope_handler.py
 
-        node_logger.log_end(state)
-
-        ctx.state.out_of_scope_message = state.get("out_of_scope_message")
-        ctx.state.requires_user_input = state.get("requires_user_input", True)
-        ctx.state.error = state.get("error")
+        node_logger.log_end(state.__dict__)
 
         # Return out-of-scope message
-        out_of_scope_message = ctx.state.out_of_scope_message
         print(
             {
                 "thought": "Query rejected as out of scope. Please provide a new query.",
@@ -137,7 +131,7 @@ class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
                 "final_content": json.dumps(
                     {
                         "type": "out_of_scope",
-                        "message": out_of_scope_message,
+                        "message": state.out_of_scope_message,
                         "requires_user_input": True,
                     }
                 ),

@@ -8,7 +8,7 @@ import os
 import pytest
 
 from llm_pydantic.tooling.tooling import create_agent_deps
-from llm_pydantic.state import AgentState
+from llm.state import AgentState
 
 # ---------------------------------------------------------------------------
 # Pytest configuration

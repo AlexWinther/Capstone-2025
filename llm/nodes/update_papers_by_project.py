@@ -6,10 +6,10 @@ from dataclasses import dataclass
 
 from pydantic_graph import BaseNode, GraphRunContext
 
-from llm_pydantic.tooling.tooling_mock import AgentDeps
 from llm.node_logger import NodeLogger
 from llm.state import AgentState
 from llm.tools.Tools_aggregator import get_tools
+from llm_pydantic.tooling.tooling_mock import AgentDeps
 
 logger = logging.getLogger("update_papers_by_project_node")
 logger.setLevel(logging.INFO)
@@ -44,14 +44,7 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> GetBestPapers:
         print("update_papers_by_project_node: called")
 
-        state = {
-            "user_query": ctx.state.user_query,
-            "qc_decision": ctx.state.qc_decision,
-            "qc_tool_result": ctx.state.qc_tool_result,
-            "project_id": ctx.state.project_id,
-            "subqueries": ctx.state.subqueries,
-            "keywords": ctx.state.keywords,
-        }
+        state = ctx.state
 
         # Step 5: Get best papers
         print(
@@ -62,7 +55,7 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\update_papers_by_project.py
         tools = get_tools()
@@ -74,10 +67,10 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
         )
         update_papers_by_project_result = None
         all_papers = []
-        project_id = state.get("project_id")
+        project_id = state.project_id
         try:
             # If subqueries exist, process each
-            subqueries = state.get("subqueries", [])
+            subqueries = state.subqueries or []
             if subqueries:
                 update_results = []
                 for sub in subqueries:
@@ -91,11 +84,9 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
             else:
                 # Fallback: single query as before
                 queries = []
-                if state.get("qc_decision") == "reformulate" and state.get(
-                    "qc_tool_result"
-                ):
+                if state.qc_decision == "reformulate" and state.qc_tool_result:
                     try:
-                        qc_result = json.loads(state["qc_tool_result"])
+                        qc_result = json.loads(state.qc_tool_result)
                         if (
                             "result" in qc_result
                             and "refined_keywords" in qc_result["result"]
@@ -105,18 +96,16 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
                             queries = [qc_result["reformulated_description"]]
                     except Exception as e:
                         print(e)
-                        queries = [state.get("user_query", "")]
-                elif state.get("qc_decision") == "split" and state.get(
-                    "qc_tool_result"
-                ):
+                        queries = [state.user_query]
+                elif state.qc_decision == "split" and state.qc_tool_result:
                     # Should not happen, handled above
-                    queries = [state.get("user_query", "")]
+                    queries = [state.user_query]
                 else:
                     # Use keywords if available, otherwise fall back to user query
-                    if state.get("keywords"):
-                        queries = state["keywords"]
+                    if state.keywords:
+                        queries = state.keywords
                     else:
-                        queries = [state.get("user_query", "")]
+                        queries = [state.user_query]
                 if update_papers_for_project_tool and project_id:
                     logger.info(
                         f"Calling update_papers_for_project with queries: {queries} and project_id: {project_id}"
@@ -129,20 +118,14 @@ class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
                     logger.info(
                         f"update_papers_for_project result: {update_papers_by_project_result}"
                     )
-            state["update_papers_by_project_result"] = update_papers_by_project_result
-            state["all_papers"] = all_papers
+            state.update_papers_by_project_result = update_papers_by_project_result
+            state.all_papers = all_papers
         except Exception as e:
-            state["error"] = f"Update papers by project node error: {e}"
+            state.error = f"Update papers by project node error: {e}"
 
         # end llm\nodes\update_papers_by_project.py
 
-        node_logger.log_end(state)
-
-        ctx.state.update_papers_by_project_result = state.get(
-            "update_papers_by_project_result", None
-        )
-        ctx.state.all_papers = state.get("all_papers", [])
-        ctx.state.error = state.get("error", None)
+        node_logger.log_end(state.__dict__)
         return GetBestPapers()
 
 

@@ -46,11 +46,7 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
     ) -> OutOfScopeHandler | ExpandSubqueries | UpdatePapersByProject:
         print("quality_control_node: called")
 
-        state = {
-            "user_query": ctx.state.user_query,
-            "out_of_scope_result": ctx.state.out_of_scope_result,
-            "keywords": ctx.state.keywords,
-        }
+        state = ctx.state
 
         # taken from llm\StategraphAgent.py l88 to 128
         # Step 3: Quality control
@@ -62,7 +58,7 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\quality_control.py
         tools = get_tools()
@@ -70,9 +66,9 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
         qc_decision = "accept"  # Default
         qc_tool_result = None
         try:
-            result = state.get("out_of_scope_result")
-            user_query = state.get("user_query", "")
-            keywords = state.get("keywords", [])
+            result = state.out_of_scope_result
+            user_query = state.user_query
+            keywords = state.keywords
 
             # Extract keywords from out_of_scope_result if available
             if result:
@@ -82,17 +78,17 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
                         if parsed.get("status") == "out_of_scope":
                             qc_decision = "out_of_scope"
                             qc_tool_result = result
-                            state["qc_decision"] = qc_decision
-                            state["qc_tool_result"] = qc_tool_result
+                            state.qc_decision = qc_decision
+                            state.qc_tool_result = qc_tool_result
                             # Don't return here - let the LLM QC decision process continue
                         elif parsed.get("status") == "valid" and "keywords" in parsed:
                             keywords = parsed["keywords"]
-                            state["keywords"] = keywords
+                            state.keywords = keywords
                 except Exception as e:
                     logger.error(f"Error parsing out_of_scope_result: {e}")
 
             # Update keywords in state
-            state["keywords"] = keywords
+            state.keywords = keywords
 
             # Use LLM to intelligently detect filter instructions
             filter_detection_prompt = f"""
@@ -141,12 +137,12 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
                     )
                     reason = filter_result.get("reason", "No reason provided")
 
-                state["has_filter_instructions"] = has_filter_instructions
+                state.has_filter_instructions = has_filter_instructions
                 logger.info(f"Filter detection: {has_filter_instructions} - {reason}")
 
             except Exception as e:
                 logger.error(f"Error in filter detection: {e}")
-                state["has_filter_instructions"] = False
+                state.has_filter_instructions = False
 
             # LLM-driven QC decision
             qc_prompt = f"""
@@ -184,8 +180,8 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
             if not isinstance(qc_result, dict):
                 qc_result = {}
             qc_decision = qc_result.get("qc_decision", "accept")
-            state["qc_decision"] = qc_decision
-            state["qc_decision_reason"] = qc_result.get("reason", "")
+            state.qc_decision = qc_decision
+            state.qc_decision_reason = qc_result.get("reason", "")
             # Call the appropriate tool if needed
             if qc_decision == "reformulate":
                 tool = tool_map.get("reformulate_query")
@@ -203,9 +199,7 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
                             "result" in tool_result
                             and "refined_keywords" in tool_result["result"]
                         ):
-                            state["keywords"] = tool_result["result"][
-                                "refined_keywords"
-                            ]
+                            state.keywords = tool_result["result"]["refined_keywords"]
                     except Exception as e:
                         logger.error(f"Error in ...: {e}")
             elif qc_decision == "split":
@@ -225,7 +219,7 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
                             else qc_tool_result
                         )
                         if "broadened_keywords" in tool_result:
-                            state["keywords"] = tool_result["broadened_keywords"]
+                            state.keywords = tool_result["broadened_keywords"]
                     except Exception as e:
                         logger.error(f"Error in ...: {e}")
             elif qc_decision == "narrow":
@@ -241,36 +235,28 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
                             else qc_tool_result
                         )
                         if "narrowed_keywords" in tool_result:
-                            state["keywords"] = tool_result["narrowed_keywords"]
+                            state.keywords = tool_result["narrowed_keywords"]
                     except Exception as e:
                         logger.error(f"Error in ...: {e}")
             elif qc_decision == "accept":
                 tool = tool_map.get("accept")
                 if tool:
                     qc_tool_result = tool.invoke({"confirmation": "yes"})
-            state["qc_tool_result"] = qc_tool_result
+            state.qc_tool_result = qc_tool_result
         except Exception as e:
-            state["error"] = f"QC node error: {e}"
+            state.error = f"QC node error: {e}"
             qc_decision = "error"
 
         # end llm\nodes\quality_control.py
 
-        node_logger.log_end(state)
-
-        ctx.state.qc_decision = state.get("qc_decision", "accept")
-        ctx.state.qc_tool_result = state.get("qc_tool_result", None)
-        ctx.state.keywords = state.get("keywords", [])
-        ctx.state.has_filter_instructions = state.get("has_filter_instructions", None)
-        ctx.state.error = state.get("error", None)
-        qc_decision = ctx.state.qc_decision
+        node_logger.log_end(state.__dict__)
 
         # Check if query is out of scope
-        qc_decision = ctx.state.qc_decision
-        if qc_decision == "out_of_scope":
+        if state.qc_decision == "out_of_scope":
             return OutOfScopeHandler()
 
         # If split, expand subqueries
-        if qc_decision == "split":
+        if state.qc_decision == "split":
             return ExpandSubqueries()
 
         return UpdatePapersByProject()

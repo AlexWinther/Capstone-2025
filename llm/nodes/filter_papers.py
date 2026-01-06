@@ -42,6 +42,8 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
             "papers_raw": ctx.state.papers_raw,
             "has_filter_instructions": ctx.state.has_filter_instructions,
         }
+        state = ctx.state
+
         # taken from llm\StategraphAgent.py l146 to 175
         # Step 6: Filter papers
         print(
@@ -52,7 +54,7 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\filter_papers_node.py
         tools = get_tools()
@@ -61,9 +63,9 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
         papers_filtered = []
 
         try:
-            user_query = state.get("user_query", "")
-            papers_raw = state.get("papers_raw", [])
-            has_filter_instructions = state.get("has_filter_instructions", False)
+            user_query = state.user_query
+            papers_raw = state.papers_raw
+            has_filter_instructions = state.has_filter_instructions
 
             if not has_filter_instructions or not papers_raw:
                 # No filtering needed or no papers to filter
@@ -71,7 +73,7 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
                 logger.info(
                     f"No filtering applied. Papers count: {len(papers_filtered)}"
                 )
-                state["applied_filter_criteria"] = {}
+                state.applied_filter_criteria = {}
             else:
                 # Use the filter_papers_by_nl_criteria tool to get both filtered papers and the filter spec
                 filter_extraction_nl = user_query
@@ -89,7 +91,7 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
                                 f"Applied filter. Kept {len(papers_filtered)} out of {len(papers_raw)} papers"
                             )
                             # Store the filter spec (filters) in the state for later use
-                            state["applied_filter_criteria"] = filter_result_parsed.get(
+                            state.applied_filter_criteria = filter_result_parsed.get(
                                 "filters", {}
                             )
                         else:
@@ -97,35 +99,30 @@ class FilterPapers(BaseNode[AgentState, AgentDeps]):
                                 f"Filter failed: {filter_result_parsed.get('message', 'Unknown error')}"
                             )
                             papers_filtered = papers_raw
-                            state["applied_filter_criteria"] = {}
+                            state.applied_filter_criteria = {}
                     except Exception as e:
                         logger.error(f"Error parsing filter result: {e}")
                         papers_filtered = papers_raw
-                        state["applied_filter_criteria"] = {}
+                        state.applied_filter_criteria = {}
                 else:
                     logger.warning("Filter tool not found")
                     papers_filtered = papers_raw
-                    state["applied_filter_criteria"] = {}
-
+                    state.applied_filter_criteria = {}
             # Limit filtered papers to top 10 to maintain consistency with other recommendation flows
             original_count = len(papers_filtered)
             papers_filtered = papers_filtered[:10]
-            state["papers_filtered"] = papers_filtered
+            state.papers_filtered = papers_filtered
             logger.info(
                 f"Limited filtered papers from {original_count} to {len(papers_filtered)} (top 10)"
             )
 
         except Exception as e:
-            state["error"] = f"Filter papers node error: {e}"
-            state["papers_filtered"] = state.get("papers_raw", [])
-            state["applied_filter_criteria"] = {}
+            state.error = f"Filter papers node error: {e}"
+            state.papers_filtered = state.papers_raw
+            state.applied_filter_criteria = {}
         # end llm\nodes\filter_papers_node.py
 
-        node_logger.log_end(state)
-
-        ctx.state.papers_filtered = state.get("papers_filtered", [])
-        ctx.state.applied_filter_criteria = state.get("applied_filter_criteria", {})
-        ctx.state.error = state.get("error", None)
+        node_logger.log_end(state.__dict__)
 
         # Check for no results
         papers_filtered = ctx.state.papers_filtered

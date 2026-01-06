@@ -36,10 +36,7 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> FilterPapers:
         print("get_best_papers_node: called")
 
-        state = {
-            "project_id": ctx.state.project_id,
-            "has_filter_instructions": ctx.state.has_filter_instructions,
-        }
+        state = ctx.state
         # Step 5: Get best papers
         print(
             {
@@ -49,7 +46,7 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\get_best_papers.py
         tools = get_tools()
@@ -59,10 +56,10 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
         try:
             # Prefer keywords if available, else use user_query
 
-            project_id = state.get("project_id", "")
+            project_id = state.project_id
 
             # Determine retrieval count based on filter instructions
-            has_filter_instructions = state.get("has_filter_instructions", False)
+            has_filter_instructions = state.has_filter_instructions
             retrieval_count = (
                 50 if has_filter_instructions else 10
             )  # More papers if filtering will be applied
@@ -77,16 +74,13 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
                     f"Retrieved {len(papers_raw)} papers (filter instructions: {has_filter_instructions}, requested: {retrieval_count})"
                 )
 
-            state["papers_raw"] = papers_raw
+            state.papers_raw = papers_raw
         except Exception as e:
-            state["error"] = f"Get best papers node error: {e}"
+            state.error = f"Get best papers node error: {e}"
 
         # end llm\nodes\get_best_papers.py
 
-        node_logger.log_end(state)
-
-        ctx.state.papers_raw = state.get("papers_raw", [])
-        ctx.state.error = state.get("error", None)
+        node_logger.log_end(state.__dict__)
 
         return FilterPapers()
 
