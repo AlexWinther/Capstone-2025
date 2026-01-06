@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 @node_logger(
     "out_of_scope_handler",
     input_keys=["user_query", "qc_decision_reason"],
-    output_keys=["out_of_scope_message", "requires_user_input"],
+    output_keys=["out_of_scope_message", "requires_user_input", "error"],
 )
 def out_of_scope_handler_node(state):
     """

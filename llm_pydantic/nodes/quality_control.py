@@ -49,24 +49,10 @@ class QualityControl(BaseNode[AgentState, AgentDeps]):
         # Check if query is out of scope
         qc_decision = state.qc_decision
         if qc_decision == "out_of_scope":
-            print(
-                {
-                    "thought": "Query determined to be out of scope. Generating explanation...",
-                    "is_final": False,
-                    "final_content": None,
-                }
-            )
             return OutOfScopeHandler()
 
         # If split, expand subqueries
         if qc_decision == "split":
-            print(
-                {
-                    "thought": "Splitting query into subqueries...",
-                    "is_final": False,
-                    "final_content": None,
-                }
-            )
             return ExpandSubqueries()
 
         return UpdatePapersByProject()

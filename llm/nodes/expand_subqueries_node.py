@@ -1,10 +1,18 @@
 import json
 import logging
 
+from llm.nodes.node_logger import node_logger
+
 logger = logging.getLogger("expand_subqueries_node")
 logger.setLevel(logging.INFO)
 
 
+# --- Expand Subqueries Node ---
+@node_logger(
+    "expand_subqueries",
+    input_keys=["qc_tool_result"],
+    output_keys=["subqueries"],
+)
 def expand_subqueries_node(state):
     """
     If the QC decision was 'split', extract subqueries and keywords from the multi_step_reasoning tool result.
