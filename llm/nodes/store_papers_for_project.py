@@ -33,12 +33,7 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
     ) -> End[AgentOutput | None]:  # ty:ignore[invalid-method-override]
         print("store_papers_for_project_node: called")
 
-        state = {
-            "project_id": ctx.state.project_id,
-            "papers_filtered": ctx.state.papers_filtered,
-            "papers_raw": ctx.state.papers_raw,
-            "user_query": ctx.state.user_query,
-        }
+        state = ctx.state
 
         # taken from llm\StategraphAgent.py l177 to 189
         # Final step: store papers for project
@@ -50,16 +45,16 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\store_papers_for_project.py
         tools = get_tools()
         tool_map = {getattr(tool, "name", None): tool for tool in tools}
         store_papers_for_project_tool = tool_map.get("store_papers_for_project")
         # Use filtered papers if available, else raw
-        project_id = state.get("project_id")
-        papers = state.get("papers_filtered") or state.get("papers_raw") or []
-        user_query = state.get("user_query", "")
+        project_id = state.project_id
+        papers = state.papers_filtered or state.papers_raw or []
+        user_query = state.user_query
         # Prepare papers for storage: must include paper_hash and agent_summary
         papers_to_store = []
         for paper in papers:
@@ -82,23 +77,20 @@ class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
             )
         else:
             result = "No papers to store or missing project_id."
-        state["store_papers_for_project_result"] = result
+        state.store_papers_for_project_result = result
 
         # end llm\nodes\store_papers_for_project.py
 
-        node_logger.log_end(state)
-
-        ctx.state.store_papers_for_project_result = state.get(
-            "store_papers_for_project_result"
-        )
+        node_logger.log_end(state.__dict__)
 
         # corrected key name, this was wrong in the stategraph before
-        store_result = ctx.state.store_papers_for_project_result
         print(
             {
                 "thought": "Agent workflow complete.",
                 "is_final": True,
-                "final_content": json.dumps({"status": store_result}),
+                "final_content": json.dumps(
+                    {"status": state.store_papers_for_project_result}
+                ),
             }
         )
 

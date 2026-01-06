@@ -42,22 +42,17 @@ class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
     ) -> End[AgentOutput]:  # ty:ignore[invalid-method-override]
         print("no_results_handler_node: called")
 
-        state = {
-            "user_query": ctx.state.user_query,
-            "papers_raw": ctx.state.all_papers,
-            "papers_filtered": ctx.state.papers_filtered,
-            "applied_filter_criteria": ctx.state.applied_filter_criteria,
-        }
+        state = ctx.state
 
         # taken from llm\StategraphAgent.py l162 to 175
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
 
         # begin llm\nodes\no_results_handler.py
-        user_query = state.get("user_query", "")
-        papers_raw = state.get("papers_raw", [])
+        user_query = state.user_query
+        papers_raw = state.papers_raw
         # papers_filtered is used implicitly - we know it's empty when this node is called
-        filter_criteria_json = state.get("applied_filter_criteria", {})
+        filter_criteria_json = state.applied_filter_criteria
 
         # Use the tool to get closest values and directions
         tools = get_tools()
@@ -103,14 +98,14 @@ class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
                 if hasattr(llm_response, "content")
                 else str(llm_response)
             )
-            state["no_results_message"] = {
+            state.no_results_message = {
                 "type": "no_results",
                 "explanation": explanation,
                 "closest_values": closest_values,
                 "filter_criteria": filter_criteria_json,
             }
         except Exception:
-            state["no_results_message"] = {
+            state.no_results_message = {
                 "type": "no_results",
                 "explanation": "No papers matched your filter. Please try broadening your search.",
                 "closest_values": closest_values,
@@ -119,10 +114,8 @@ class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
 
         # end llm\nodes\no_results_handler.py
 
-        node_logger.log_end(state)
+        node_logger.log_end(state.__dict__)
 
-        ctx.state.no_results_message = state.get("no_results_message", "")
-        no_results_message = ctx.state.no_results_message
         print(
             {
                 "thought": "No papers found. Please try broadening your search or adjusting your filter.",
@@ -130,7 +123,7 @@ class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
                 "final_content": json.dumps(
                     {
                         "type": "no_results",
-                        "message": no_results_message,
+                        "message": state.no_results_message,
                         "requires_user_input": True,
                     }
                 ),

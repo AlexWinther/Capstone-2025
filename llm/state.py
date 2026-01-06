@@ -47,6 +47,9 @@ class AgentState:
     qc_decision: str = ""
     # used by: QualityControl, UpdatePapersByProject
 
+    qc_decision_reason: str = ""
+    # used by: QualityControl
+
     qc_tool_result: Optional[str] = None
     # used by: QualityControl, UpdatePapersByProject
 

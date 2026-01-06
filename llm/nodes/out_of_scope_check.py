@@ -37,9 +37,7 @@ class OutOfScopeCheck(BaseNode[AgentState, AgentDeps]):
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> QualityControl:
         print("out_of_scope_check_node: called")
 
-        state = {
-            "user_query": ctx.state.user_query,
-        }
+        state = ctx.state
 
         # Step 2: Out-of-scope check
         print(
@@ -50,7 +48,7 @@ class OutOfScopeCheck(BaseNode[AgentState, AgentDeps]):
             }
         )
 
-        node_logger.log_begin(state)
+        node_logger.log_begin(state.__dict__)
         # begin llm\nodes\out_of_scope_check.py
         # Get the detect_out_of_scope_query tool
         tools = get_tools()
@@ -60,28 +58,24 @@ class OutOfScopeCheck(BaseNode[AgentState, AgentDeps]):
                 detect_out_of_scope_query = tool
                 break
         if detect_out_of_scope_query is None:
-            state["error"] = "detect_out_of_scope_query tool not found"
+            state.error = "detect_out_of_scope_query tool not found"
             return state
 
         # Call the tool
         result = detect_out_of_scope_query.invoke(
-            {"query_description": state["user_query"]}
+            {"query_description": state.user_query}
         )
-        state["out_of_scope_result"] = result
+        state.out_of_scope_result = result
 
         # end llm\nodes\out_of_scope_check.py
 
-        node_logger.log_end(state)
-
-        ctx.state.out_of_scope_result = state["out_of_scope_result"]
-        ctx.state.error = state.get("error", None)
+        node_logger.log_end(state.__dict__)
 
         # taken from llm\StategraphAgent.py l73 to 86
         # Extract keywords from out_of_scope_result if available
-        out_of_scope_result = ctx.state.out_of_scope_result
-        if out_of_scope_result:
+        if state.out_of_scope_result:
             try:
-                parsed = json.loads(out_of_scope_result)
+                parsed = json.loads(state.out_of_scope_result)
                 if parsed.get("status") == "valid" and "keywords" in parsed:
                     ctx.state.keywords = parsed["keywords"]
                     print(
