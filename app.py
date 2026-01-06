@@ -79,9 +79,17 @@ else:
 
 logger = logging.getLogger(__name__)
 
+APP_VERSION = os.getenv("APP_VERSION", "dev")
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB
+
+
+@app.context_processor
+def inject_app_version():
+    """Inject APP_VERSION into all templates."""
+    return {"APP_VERSION": APP_VERSION}
 
 
 # Initialize Clerk only if not in test mode
