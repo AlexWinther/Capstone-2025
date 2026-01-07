@@ -108,16 +108,16 @@ async def trigger_stategraph_agent_show_thoughts_async(user_message: str):
 
         # Map node class names to user-friendly descriptions
         node_descriptions = {
-            "Input": "Processing user input PYDANTIC...",
-            "OutOfScopeCheck": "Checking if query is within scope PYDANTIC...",
-            "QualityControl": "Performing quality control and filter detection PYDANTIC...",
-            "OutOfScopeHandler": "Query determined to be out of scope. Generating explanation PYDANTIC...",
-            "ExpandSubqueries": "Splitting query into subqueries PYDANTIC...",
-            "UpdatePapersByProject": "Updating paper database with latest research PYDANTIC...",
-            "GetBestPapers": "Retrieving most relevant papers PYDANTIC...",
-            "FilterPapers": "Applying filters to refine results PYDANTIC...",
-            "NoResultsHandler": "No papers found after filtering. Generating smart no-results explanation PYDANTIC...",
-            "StorePapersForProject": "Storing recommended papers for this project PYDANTIC...",
+            "Input": "Processing user input...",
+            "OutOfScopeCheck": "Checking if query is within scope...",
+            "QualityControl": "Performing quality control and filter detection...",
+            "OutOfScopeHandler": "Query determined to be out of scope. Generating explanation...",
+            "ExpandSubqueries": "Splitting query into subqueries...",
+            "UpdatePapersByProject": "Updating paper database with latest research...",
+            "GetBestPapers": "Retrieving most relevant papers...",
+            "FilterPapers": "Applying filters to refine results...",
+            "NoResultsHandler": "No papers found after filtering. Generating smart no-results explanation...",
+            "StorePapersForProject": "Storing recommended papers for this project...",
         }
 
         # Run the graph with streaming events using iter context manager

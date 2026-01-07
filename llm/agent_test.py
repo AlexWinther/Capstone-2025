@@ -72,7 +72,7 @@ def run_test(user_query: str) -> None:
     graph = build_agent_graph()
     state = AgentState()
     deps = AgentDeps()
-    result = graph.run_sync(Input(user_message=final_query), state=state, deps=deps)
+    graph.run_sync(Input(user_message=final_query), state=state, deps=deps)
 
     project_papers = get_papers_for_project(project_id)
 
