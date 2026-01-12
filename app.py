@@ -167,13 +167,11 @@ def authenticate_user():
 
     try:
         # Authenticate the request using Clerk
-        # For local development, don't restrict authorized_parties
-        auth_options = AuthenticateRequestOptions()
-
-        # Debug logging
-        auth_header = request.headers.get("Authorization", "None")
-        logger.info(f"Auth attempt for {request.path}")
-        logger.info(f"Authorization header present: {auth_header != 'None'}")
+        hostname = HOSTNAME
+        if hostname:
+            auth_options = AuthenticateRequestOptions(authorized_parties=[hostname])
+        else:
+            auth_options = AuthenticateRequestOptions()
 
         request_state = clerk_sdk.authenticate_request(request, auth_options)
         logger.info(f"Auth state - is_signed_in: {request_state.is_signed_in}")
@@ -256,20 +254,6 @@ def home():
         showCreateProjectButton=True,
         CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
         CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
-    )
-
-
-@app.route("/api/clerk-config")
-def clerk_config():
-    """
-    Get Clerk configuration for the frontend.
-    Returns publishable key and frontend API URL.
-    """
-    return jsonify(
-        {
-            "publishableKey": os.getenv("CLERK_PUBLISHABLE_KEY"),
-            "frontendApiUrl": os.getenv("CLERK_FRONTEND_API_URL"),
-        }
     )
 
 
