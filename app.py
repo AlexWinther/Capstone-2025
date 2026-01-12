@@ -85,26 +85,27 @@ agent_locks = threading.Lock()
 
 class AgentSession:
     """Manages an agent processing session with support for multiple listeners"""
+
     def __init__(self):
         self.events = []  # History of all events
         self.complete = False
         self.listeners = []  # List of queues for active listeners
         self.lock = threading.Lock()
-    
+
     def add_event(self, event):
         """Add an event and broadcast to all listeners"""
         with self.lock:
             self.events.append(event)
             for listener in self.listeners:
                 listener.put(event)
-    
+
     def mark_complete(self):
         """Mark session as complete and notify all listeners"""
         with self.lock:
             self.complete = True
             for listener in self.listeners:
                 listener.put(None)  # Signal end
-    
+
     def subscribe(self):
         """Subscribe to events, returns a queue and replays past events"""
         q = Queue()
@@ -117,7 +118,7 @@ class AgentSession:
             else:
                 self.listeners.append(q)
         return q
-    
+
     def unsubscribe(self, q):
         """Remove a listener queue"""
         with self.lock:
@@ -170,11 +171,11 @@ def authenticate_user():
         logger.info(f"Auth state - is_signed_in: {request_state.is_signed_in}")
         logger.info(f"Auth state - status: {request_state.status}")
         logger.info(f"Auth state - reason: {request_state.reason}")
-        
+
         # Debug token details if available
-        if hasattr(request_state, 'token') and request_state.token:
+        if hasattr(request_state, "token") and request_state.token:
             logger.info(f"Token found: {type(request_state.token)}")
-            if hasattr(request_state.token, 'azp'):
+            if hasattr(request_state.token, "azp"):
                 logger.info(f"Token azp (authorized party): {request_state.token.azp}")
 
     except Exception as e:
@@ -182,6 +183,7 @@ def authenticate_user():
         logger.error(f"Authentication error for {request.path}: {e}")
         logger.error(f"Error type: {type(e).__name__}")
         import traceback
+
         logger.error(f"Traceback: {traceback.format_exc()}")
         request.auth = None
         return
@@ -211,7 +213,9 @@ def authenticate_user():
             logging.error(f"Error fetching user info from Clerk:\n{e}")
 
     else:
-        logger.warning(f"Not signed in - status: {request_state.status}, reason: {request_state.reason}")
+        logger.warning(
+            f"Not signed in - status: {request_state.status}, reason: {request_state.reason}"
+        )
         request.auth = None
 
 
@@ -253,10 +257,12 @@ def clerk_config():
     Get Clerk configuration for the frontend.
     Returns publishable key and frontend API URL.
     """
-    return jsonify({
-        "publishableKey": os.getenv("CLERK_PUBLISHABLE_KEY"),
-        "frontendApiUrl": os.getenv("CLERK_FRONTEND_API_URL"),
-    })
+    return jsonify(
+        {
+            "publishableKey": os.getenv("CLERK_PUBLISHABLE_KEY"),
+            "frontendApiUrl": os.getenv("CLERK_FRONTEND_API_URL"),
+        }
+    )
 
 
 @app.route("/create-project")
@@ -392,12 +398,14 @@ def get_recommendations():
         # Check if there's an existing agent session for this project
         with agent_locks:
             existing_session = agent_sessions.get(project_id)
-        
+
         # If agent is already processing and we're not forcing update, connect to existing session
         if existing_session is not None and not update_recommendations:
-            logger.info(f"Reconnecting to existing agent session for project {project_id}")
+            logger.info(
+                f"Reconnecting to existing agent session for project {project_id}"
+            )
             listener_queue = existing_session.subscribe()
-            
+
             def generate_reconnect():
                 """Reconnect to existing agent stream with event replay"""
                 try:
@@ -408,22 +416,29 @@ def get_recommendations():
                                 break
                             yield f"data: {json.dumps(event)}\n\n"
                         except Empty:
-                            yield f": keepalive\n\n"
+                            yield ": keepalive\n\n"
                             continue
                 except GeneratorExit:
-                    logger.info(f"Client disconnected from reconnected stream for project {project_id}")
+                    logger.info(
+                        f"Client disconnected from reconnected stream for project {project_id}"
+                    )
                 finally:
                     existing_session.unsubscribe(listener_queue)
-            
-            return Response(stream_with_context(generate_reconnect()), mimetype="text/event-stream")
+
+            return Response(
+                stream_with_context(generate_reconnect()), mimetype="text/event-stream"
+            )
 
         # If NOT updating recommendations and no agent is processing, fetch from database
         if not update_recommendations:
+
             def generate_existing():
                 """Immediately return existing recommendations from database"""
                 try:
                     recs_basic_data = get_papers_for_project(project_id)
-                    logger.info(f"Returning {len(recs_basic_data)} existing papers from database.")
+                    logger.info(
+                        f"Returning {len(recs_basic_data)} existing papers from database."
+                    )
                     recommendations = []
                     for rec in recs_basic_data:
                         paper = get_paper_by_hash(rec["paper_hash"])
@@ -446,8 +461,10 @@ def get_recommendations():
                 except Exception as e:
                     logger.error(f"Error fetching existing recommendations: {e}")
                     yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            
-            return Response(stream_with_context(generate_existing()), mimetype="text/event-stream")
+
+            return Response(
+                stream_with_context(generate_existing()), mimetype="text/event-stream"
+            )
 
         # Create new agent session for updating recommendations
         session = AgentSession()
@@ -459,7 +476,7 @@ def get_recommendations():
             try:
                 removed = delete_project_rows(project_id)
                 print(f"Deleted {removed} row(s).")
-                
+
                 for response_part in trigger_stategraph_agent_show_thoughts(
                     user_description + "project ID: " + project_id
                 ):
@@ -483,13 +500,17 @@ def get_recommendations():
                                 return
 
                         except json.JSONDecodeError:
-                            print(f"Failed to parse LLM response: {llm_response_content}")
-                            session.add_event({"error": "Failed to parse recommendations from LLM."})
+                            print(
+                                f"Failed to parse LLM response: {llm_response_content}"
+                            )
+                            session.add_event(
+                                {"error": "Failed to parse recommendations from LLM."}
+                            )
                             session.mark_complete()
                             return
                     else:
                         session.add_event({"thought": response_part["thought"]})
-                
+
                 # Fetch and send recommendations after agent completes
                 recs_basic_data = get_papers_for_project(project_id)
                 logger.info(f"Sending {len(recs_basic_data)} papers to the frontend.")
@@ -513,7 +534,7 @@ def get_recommendations():
                     recommendations.append(paper_dict)
                 session.add_event({"recommendations": recommendations})
                 session.mark_complete()
-                
+
             except Exception as e:
                 logger.error(f"Error in background agent processing: {e}")
                 session.add_event({"error": f"An internal error occurred: {str(e)}"})
@@ -522,12 +543,15 @@ def get_recommendations():
                 # Clean up session after a delay to allow reconnections
                 def cleanup():
                     import time
+
                     time.sleep(60)  # Keep session for 60 seconds after completion
                     with agent_locks:
                         if project_id in agent_sessions:
                             del agent_sessions[project_id]
-                            logger.info(f"Cleaned up agent session for project {project_id}")
-                
+                            logger.info(
+                                f"Cleaned up agent session for project {project_id}"
+                            )
+
                 threading.Thread(target=cleanup, daemon=True).start()
 
         # Start background processing
@@ -547,10 +571,12 @@ def get_recommendations():
                             break
                         yield f"data: {json.dumps(event)}\n\n"
                     except Empty:
-                        yield f": keepalive\n\n"
+                        yield ": keepalive\n\n"
                         continue
             except GeneratorExit:
-                logger.info(f"Client disconnected from project {project_id} stream, but agent continues processing")
+                logger.info(
+                    f"Client disconnected from project {project_id} stream, but agent continues processing"
+                )
             finally:
                 session.unsubscribe(listener_queue)
 
