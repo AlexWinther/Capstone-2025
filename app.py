@@ -257,6 +257,20 @@ def home():
     )
 
 
+@app.route("/api/clerk-config")
+def clerk_config():
+    """
+    Get Clerk configuration for the frontend.
+    Returns publishable key and frontend API URL.
+    """
+    return jsonify(
+        {
+            "publishableKey": CLERK_PUBLISHABLE_KEY,
+            "frontendApiUrl": CLERK_FRONTEND_API_URL,
+        }
+    )
+
+
 @app.route("/create-project")
 def create_project_page():
     """
