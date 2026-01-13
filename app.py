@@ -271,57 +271,6 @@ def clerk_config():
     )
 
 
-@app.route("/create-project")
-def create_project_page():
-    """
-    Render the create project page.
-    Returns:
-        Response: Rendered create_project.html template.
-    """
-    if not request.auth:
-        return {"error": "Not authenticated"}, 401
-
-    return render_template(
-        "create_project.html",
-        auth=request.auth,
-        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
-        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
-    )
-
-
-@app.route("/project/<project_id>")
-def project_overview_page(project_id):
-    """
-    Render the project overview page for a given project.
-    Args:
-        project_id (str): The project ID.
-    Returns:
-        Response: Rendered project_overview.html template.
-    """
-    if not request.auth:
-        return render_template(
-            "dashboard.html",
-            auth=None,
-            CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
-            CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
-        )
-
-    user_id = request.auth["user_id"]
-    project = get_project_by_id(user_id, project_id)
-    if not project:
-        return {"error": "Project not found"}, 404
-    if project["user_id"] != user_id:
-        return {"error": "Forbidden"}, 403
-
-    return render_template(
-        "project_overview.html",
-        project_id=project_id,
-        auth=request.auth,
-        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
-        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
-    )
-
-
 @app.route("/api/projects", methods=["POST"])
 def api_create_project():
     """
