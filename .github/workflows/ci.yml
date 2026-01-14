@@ -98,20 +98,23 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Waiting for frontend (nginx) on port 80..."
-          timeout 120 bash -c 'until curl -s http://localhost:80 > /dev/null 2>&1; do echo "Waiting..."; sleep 3; done'
+          timeout 180 bash -c 'until curl -s http://localhost:80 > /dev/null 2>&1; do echo "Waiting..."; sleep 5; done'
           echo "✓ Frontend ready"
           
           echo "Waiting for backend (Flask) on port 8080..."
-          timeout 120 bash -c 'until curl -s http://localhost:8080/api/clerk-config > /dev/null 2>&1; do echo "Waiting..."; sleep 3; done'
+          timeout 180 bash -c 'until curl -s http://localhost:8080/api/clerk-config > /dev/null 2>&1; do echo "Waiting..."; sleep 5; done'
           echo "✓ Backend ready"
           
           echo "Waiting for PostgreSQL on port 5432..."
-          timeout 60 bash -c 'until nc -z localhost 5432; do echo "Waiting..."; sleep 2; done'
+          timeout 90 bash -c 'until nc -z localhost 5432; do echo "Waiting..."; sleep 3; done'
           echo "✓ PostgreSQL ready"
           
           echo "Waiting for ChromaDB on port 8000..."
-          timeout 90 bash -c 'until curl -s http://localhost:8000/api/v2/heartbeat > /dev/null 2>&1; do echo "Waiting..."; sleep 3; done'
+          timeout 120 bash -c 'until curl -s http://localhost:8000/api/v2/heartbeat > /dev/null 2>&1; do echo "Waiting..."; sleep 5; done'
           echo "✓ ChromaDB ready"
+          
+          echo "Giving services extra time to fully initialize..."
+          sleep 10
           
           echo "All services ready!"
           
@@ -120,14 +123,28 @@ jobs:
           echo "Testing ChromaDB endpoint..."
           curl -v http://localhost:8000/api/v2/heartbeat
 
+      - name: Verify backend API is working
+        run: |
+          echo "Testing backend health..."
+          curl -v http://localhost:8080/api/clerk-config
+          echo ""
+          echo "Checking if backend can connect to database..."
+          docker compose exec -T web python -c "from database.database_connection import get_connection; conn = get_connection(); print('✓ Database connection OK'); conn.close()" || echo "⚠ Database connection failed"
+          echo ""
+          echo "Checking if backend can connect to ChromaDB..."
+          docker compose exec -T web python -c "from chroma_db.chroma_vector_db import chroma_db; print('✓ ChromaDB connection OK')" || echo "⚠ ChromaDB connection failed"
+
       - name: Check Docker services status
         if: always()
         run: docker compose ps
 
-      - name: Run E2E tests
-        run: uv run pytest tests/e2e/ -v
+      - name: Show backend startup logs
+        run: docker compose logs web | tail -50
 
-      - name: Show backend logs on failure
+      - name: Run E2E tests
+        run: uv run pytest tests/e2e/ -v -s
+
+      - name: Show all backend logs on failure
         if: failure()
         run: docker compose logs web
 
