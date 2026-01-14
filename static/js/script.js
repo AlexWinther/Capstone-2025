@@ -142,19 +142,22 @@ async function handleRouting () {
     if (path === '/create-project') {
        setupPDFUpload();
 
-       const createProjectForm = document.getElementById('createProjectForm');
-       createProjectForm?.addEventListener('submit', async(event) => {
-        event.preventDefault();
-        const title       = document.getElementById('projectTitle').value;
-        const description = document.getElementById('projectDescription').value;
+        const createProjectForm = document.getElementById('createProjectForm');
+        createProjectForm?.addEventListener('submit', async(event) => {
+         event.preventDefault();
+         const title       = document.getElementById('projectTitle').value;
+         const description = document.getElementById('projectDescription').value;
+         const logHistoryCheckbox = document.getElementById('logHistory');
+         const logHistory  = logHistoryCheckbox?.checked ? 'true' : 'false';
+ 
+             // POST to real endpoint instead of localStorage
+             const res = await fetch('/api/projects', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ title, description, logHistory }),
+               credentials: 'include'
+             });
 
-            // POST to real endpoint instead of localStorage
-            const res = await fetch('/api/projects', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title, description }),
-              credentials: 'include'
-            });
             if (!res.ok) {
               return alert('Error creating project');
             }
@@ -1128,19 +1131,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="project-date">Created: ${formattedDate}</div>
             `;
-            
+
             // Add delete button handler
             const deleteBtn = card.querySelector('.delete-project-btn');
             deleteBtn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // Prevent card click navigation
-                
+
                 if (confirm(`Are you sure you want to delete "${project.title}"? This action cannot be undone.`)) {
                     try {
                         const response = await fetch(`/api/project/${project.project_id}`, {
                             method: 'DELETE',
                             credentials: 'include'
                         });
-                        
+
                         if (response.ok) {
                             // Remove card with animation
                             card.style.opacity = '0';
@@ -1160,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
-            
+
             // Navigate to project page on card click
             card.addEventListener('click', () => {
                 if (project.project_id) {
@@ -1459,13 +1462,13 @@ function setupSearchPanel() {
         if (sortInfoIcon) {
             const currentSort = sortSelect.value || '';
             const tooltipText = sortTooltips[currentSort] || sortTooltips[''];
-            
+
             // Remove any existing tooltip
             const existingTooltip = sortInfoIcon.querySelector('.sort-tooltip-popup');
             if (existingTooltip) {
                 existingTooltip.remove();
             }
-            
+
             // Create new tooltip popup
             const tooltip = document.createElement('div');
             tooltip.className = 'sort-tooltip-popup';
