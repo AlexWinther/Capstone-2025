@@ -23,7 +23,6 @@ from flask import (
     Flask,
     request,
     jsonify,
-    render_template,
     Response,
     stream_with_context,
 )
@@ -238,23 +237,6 @@ def request_entity_too_large(error):
         f"HTTP Error 413 - Request rejected. Request content length exceeds 50MB limit. Request Content Length: {request.content_length}"
     )
     return jsonify({"error": "File size exceeds maximum allowed size (50MB)"}), 413
-
-
-@app.route("/")
-def home():
-    """
-    Render the dashboard homepage or login view based on user authentication.
-    Returns:
-        Response: Rendered dashboard.html template or login view.
-    """
-
-    return render_template(
-        "dashboard.html",
-        auth=request.auth,
-        showCreateProjectButton=True,
-        CLERK_PUBLISHABLE_KEY=CLERK_PUBLISHABLE_KEY,
-        CLERK_FRONTEND_API_URL=CLERK_FRONTEND_API_URL,
-    )
 
 
 @app.route("/api/clerk-config")
