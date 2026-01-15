@@ -229,7 +229,7 @@ export default function ProjectOverview() {
   const markSeenMutation = useMutation({
     mutationFn: ({ paperHash }: { paperHash: string }) =>
       markSeen(projectId!, paperHash),
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       console.log('Mark seen response:', data);
     },
   });
