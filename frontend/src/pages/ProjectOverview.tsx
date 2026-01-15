@@ -17,11 +17,11 @@ interface Project {
 function extractUserDescription(fullDescription: string): string {
   const pdfMarker = "\n\nUser provided this paper:";
   const markerIndex = fullDescription.indexOf(pdfMarker);
-  
+
   if (markerIndex !== -1) {
     return fullDescription.substring(0, markerIndex).trim();
   }
-  
+
   return fullDescription;
 }
 
@@ -44,17 +44,32 @@ async function ratePaper(projectId: string, paperHash: string, rating: number) {
       rating,
     }),
   });
-  
+
   if (!response.ok) throw new Error("Failed to rate paper");
+  return response.json();
+}
+
+async function markSeen(projectId: string, paperHash: string) {
+  const response = await fetch("/api/mark_seen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      project_id: projectId,
+      paper_hash: paperHash,
+    }),
+  });
+
+  if (!response.ok) throw new Error("Failed to mark paper as seen");
   return response.json();
 }
 
 export default function ProjectOverview() {
   const { projectId } = useParams<{ projectId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const updateRecommendations = searchParams.get("updateRecommendations") === "true";
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [filterBy, setFilterBy] = useState("");
@@ -114,12 +129,12 @@ export default function ProjectOverview() {
   // Remove updateRecommendations param from URL after stream completes
   // This prevents re-running the agent on page refresh
   const hasRemovedParam = useRef(false);
-  
+
   useEffect(() => {
     if (!updateRecommendations || hasRemovedParam.current || streamLoading) {
       return;
     }
-    
+
     // Only remove the param AFTER stream has completely finished
     if (recommendations.length > 0 || thoughts.length > 0) {
       hasRemovedParam.current = true;
@@ -135,12 +150,12 @@ export default function ProjectOverview() {
     onSuccess: (data, variables) => {
       console.log('Rating response:', data);
       console.log('Variables:', variables);
-      
+
       // Handle replacement if returned (rating 1-2)
       if (data.replacement && data.replacement.status === 'success') {
         const replacement = data.replacement;
         console.log('Replacement data:', replacement);
-        
+
         const replacementPaper: Paper = {
           hash: replacement.replacement_paper_hash,
           title: replacement.replacement_title,
@@ -157,12 +172,12 @@ export default function ProjectOverview() {
           oa_status: replacement.replacement_oa_status,
           pdf_url: replacement.replacement_pdf_url,
         };
-        
+
         console.log('Created replacement paper:', replacementPaper);
-        
+
         // Start fade out animation
         setFadingOutPapers(prev => new Set(prev).add(variables.paperHash));
-        
+
         // After fade out, replace the paper
         setTimeout(() => {
           // Store the replacement mapping
@@ -171,17 +186,17 @@ export default function ProjectOverview() {
             console.log('Updated replacedPapers map:', Array.from(newMap.entries()));
             return newMap;
           });
-          
+
           // Remove from fading out
           setFadingOutPapers(prev => {
             const next = new Set(prev);
             next.delete(variables.paperHash);
             return next;
           });
-          
+
           // Add to replacement tracking for highlighting
           setReplacementPapers(prev => new Set(prev).add(replacementPaper.hash));
-          
+
           // Remove highlight after 5 seconds
           setTimeout(() => {
             setReplacementPapers(prev => {
@@ -194,10 +209,10 @@ export default function ProjectOverview() {
       } else if (variables.rating <= 2) {
         // Rating is 1-2 but no replacement found - remove the paper
         console.log('No replacement found (low rating), removing paper:', variables.paperHash);
-        
+
         // Start fade out animation
         setFadingOutPapers(prev => new Set(prev).add(variables.paperHash));
-        
+
         // After fade out, remove the paper
         setTimeout(() => {
           setRemovedPapers(prev => new Set(prev).add(variables.paperHash));
@@ -211,18 +226,26 @@ export default function ProjectOverview() {
     },
   });
 
+  const markSeenMutation = useMutation({
+    mutationFn: ({ paperHash }: { paperHash: string }) =>
+      markSeen(projectId!, paperHash),
+    onSuccess: (data, variables) => {
+      console.log('Mark seen response:', data);
+    },
+  });
+
   // Filter and sort papers (including loaded additional papers)
   const filteredAndSortedPapers = useMemo(() => {
     // Apply replacements to recommendations and filter out removed papers
     let papers = [...recommendations
       .filter(p => !removedPapers.has(p.hash))
-      .map(p => replacedPapers.get(p.hash) || p), 
-      ...additionalPapers.filter(p => !removedPapers.has(p.hash))];
+      .map(p => replacedPapers.get(p.hash) || p),
+    ...additionalPapers.filter(p => !removedPapers.has(p.hash))];
 
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      papers = papers.filter(p => 
+      papers = papers.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.description?.toLowerCase().includes(query) ||
         p.authors?.toLowerCase().includes(query)
@@ -257,8 +280,8 @@ export default function ProjectOverview() {
       papers.sort((a, b) => (b.fwci || 0) - (a.fwci || 0));
     } else if (sortBy === "percentile") {
       papers.sort((a, b) => {
-        const pctA = typeof a.citation_normalized_percentile === "object" 
-          ? a.citation_normalized_percentile.value || 0 
+        const pctA = typeof a.citation_normalized_percentile === "object"
+          ? a.citation_normalized_percentile.value || 0
           : 0;
         const pctB = typeof b.citation_normalized_percentile === "object"
           ? b.citation_normalized_percentile.value || 0
@@ -274,6 +297,10 @@ export default function ProjectOverview() {
 
   const handleRatePaper = async (paperHash: string, rating: number) => {
     await rateMutation.mutateAsync({ paperHash, rating });
+  };
+
+  const handleMarkSeen = async (paperHash: string) => {
+    await markSeenMutation.mutateAsync({ paperHash });
   };
 
   if (projectLoading) {
@@ -321,7 +348,7 @@ export default function ProjectOverview() {
                 // Determine icon based on thought content
                 let icon = '🧠';
                 let content = thought;
-                
+
                 if (content.includes('Calling tool:')) {
                   icon = '🛠️';
                 } else if (content.includes('Tool response')) {
@@ -339,7 +366,7 @@ export default function ProjectOverview() {
                 } else if (content.includes('Updating')) {
                   icon = '🧠';
                 }
-                
+
                 return (
                   <li key={index}>
                     {icon} {content}
@@ -362,6 +389,7 @@ export default function ProjectOverview() {
                   key={paper.hash}
                   paper={paper}
                   onRate={handleRatePaper}
+                  onMarkSeen={handleMarkSeen}
                   isReplacement={false}
                 />
               ))}
@@ -455,15 +483,16 @@ export default function ProjectOverview() {
                     key={paper.hash}
                     paper={paper}
                     onRate={handleRatePaper}
+                    onMarkSeen={handleMarkSeen}
                     isReplacement={replacementPapers.has(paper.hash)}
                     isFadingOut={fadingOutPapers.has(paper.hash)}
                   />
                 ))}
               </div>
-              
+
               {/* Load More Button */}
               <div className="load-more-container">
-                <button 
+                <button
                   id="loadMoreBtn"
                   className="load-more-btn"
                   onClick={loadMore}

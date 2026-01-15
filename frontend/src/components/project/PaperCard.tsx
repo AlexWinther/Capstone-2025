@@ -6,20 +6,21 @@ import type { Paper } from "@/types";
 interface PaperCardProps {
   paper: Paper;
   onRate: (paperHash: string, rating: number) => Promise<void>;
+  onMarkSeen?: (paperHash: string) => void;
   isReplacement?: boolean;
   isFadingOut?: boolean;
 }
 
-export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = false }: PaperCardProps) {
+export function PaperCard({ paper, onRate, onMarkSeen, isReplacement = false, isFadingOut = false }: PaperCardProps) {
   const [currentRating, setCurrentRating] = useState(paper.rating || 0);
   const [isRating, setIsRating] = useState(false);
 
   const handleRatingClick = async (rating: number) => {
     if (isRating) return;
-    
+
     setIsRating(true);
     setCurrentRating(rating);
-    
+
     try {
       await onRate(paper.hash, rating);
     } catch (error) {
@@ -43,21 +44,21 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
 
   const getPercentileBadge = (percentile: any) => {
     if (!percentile || typeof percentile !== "object") return null;
-    
+
     const value = Math.round(percentile.value * 100);
-    
+
     if (percentile.is_in_top_1_percent) {
       return { color: "#dc3545", text: "TOP 1%", value };
     }
     if (percentile.is_in_top_10_percent) {
       return { color: "#ffc107", text: "TOP 10%", value };
     }
-    
+
     return null;
   };
 
-  const year = paper.publication_date 
-    ? new Date(paper.publication_date).getFullYear() 
+  const year = paper.publication_date
+    ? new Date(paper.publication_date).getFullYear()
     : null;
 
   const pdfUrl = paper.pdf_url || (paper.is_oa && paper.oa_url ? paper.oa_url : null);
@@ -65,11 +66,9 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
 
   return (
     <Card
-      className={`recommendation-card transition-all duration-500 ${
-        isReplacement ? "animate-pulse bg-blue-50 scale-100" : ""
-      } ${
-        isFadingOut ? "opacity-0 scale-95" : "opacity-100 scale-100"
-      }`}
+      className={`recommendation-card transition-all duration-500 ${isReplacement ? "animate-pulse bg-blue-50 scale-100" : ""
+        } ${isFadingOut ? "opacity-0 scale-95" : "opacity-100 scale-100"
+        }`}
       data-paper-hash={paper.hash}
       data-title={paper.title.toLowerCase()}
       data-rating={currentRating}
@@ -84,7 +83,7 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
           <h3 className="text-xl font-bold text-text-primary flex-1 leading-tight">
             {paper.title}
           </h3>
-          
+
           {/* Key Metrics */}
           <div className="flex gap-4 items-center flex-shrink-0">
             {/* FWCI */}
@@ -149,11 +148,10 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
                   className="transition-transform hover:scale-110 disabled:opacity-50"
                 >
                   <Star
-                    className={`w-5 h-5 ${
-                      star <= currentRating
+                    className={`w-5 h-5 ${star <= currentRating
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 </button>
               ))}
@@ -208,6 +206,7 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
               href={paper.link}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => onMarkSeen?.(paper.hash)}
               className="inline-flex items-center gap-1.5 bg-gray-600 hover:bg-gray-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -238,6 +237,7 @@ export function PaperCard({ paper, onRate, isReplacement = false, isFadingOut = 
               href={pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => onMarkSeen?.(paper.hash)}
               className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-xs font-semibold transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

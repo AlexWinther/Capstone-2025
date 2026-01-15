@@ -652,6 +652,39 @@ def api_get_newsletter():
     return jsonify(papers)
 
 
+@app.route("/api/mark_seen", methods=["POST"])
+def api_mark_seen():
+    """
+    Mark a paper as seen for a specific project.
+    Validates that the project belongs to the authenticated user.
+    """
+    if not request.auth:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = request.auth["user_id"]
+    data = request.get_json() or {}
+    project_id = data.get("project_id")
+    paper_hash = data.get("paper_hash")
+
+    if not project_id or not paper_hash:
+        return jsonify({"error": "Missing project_id or paper_hash"}), 400
+
+    # ownership check
+    project = get_project_by_id(user_id, project_id)
+    if not project:
+        return jsonify({"error": "Project not found or unauthorized"}), 404
+
+    try:
+        updated = mark_paper_seen(project_id, paper_hash)
+        if updated:
+            return jsonify({"success": True}), 200
+        else:
+            return jsonify({"error": "Paper not linked to project"}), 404
+    except Exception as e:
+        logger.error(f"Error marking paper seen: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # Gives front-end the project’s metadata (title, description, queries, email).
 # need this on page load to fill in the header (project title/description)
 # and to know which project_id to pass into the other two endpoints.
@@ -716,6 +749,9 @@ def rate_paper():
         update_user_profile_embedding_from_rating(
             user_id, project_id, paper_hash, rating
         )
+
+        # Also mark as seen since the user has rated it
+        mark_paper_seen(project_id, paper_hash)
 
         # If rating is low (1-2 stars), automatically replace the paper
         replacement_result = None
