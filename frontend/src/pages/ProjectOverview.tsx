@@ -5,6 +5,7 @@ import { useRecommendationsStream } from "@/hooks/useRecommendationsStream";
 import { useNewsletterPapers } from "@/hooks/useNewsletterPapers";
 import { useLoadMorePapers } from "@/hooks/useLoadMorePapers";
 import { PaperCard } from "@/components/project/PaperCard";
+import { NewsletterSettings } from "@/components/project/NewsletterSettings";
 import type { Paper } from "@/types";
 
 interface Project {
@@ -380,25 +381,34 @@ export default function ProjectOverview() {
         {/* Latest Papers Section - Newsletter/PubSub papers */}
         <div className="recommendations-section">
           <h2>Latest Papers</h2>
-          {newsletterLoading ? (
-            <p className="no-papers-message">Loading latest papers...</p>
-          ) : newsletterPapers.length > 0 ? (
-            <div className="latest-papers-grid">
-              {newsletterPapers.map((paper) => (
-                <PaperCard
-                  key={paper.hash}
-                  paper={paper}
-                  onRate={handleRatePaper}
-                  onMarkSeen={handleMarkSeen}
-                  isReplacement={false}
-                />
-              ))}
+          <div className="flex flex-col xl:flex-row gap-8 items-start">
+            <div className="flex-1 w-full">
+              {newsletterLoading ? (
+                <p className="no-papers-message">Loading latest papers...</p>
+              ) : newsletterPapers.length > 0 ? (
+                <div className="latest-papers-grid">
+                  {newsletterPapers.map((paper) => (
+                    <PaperCard
+                      key={paper.hash}
+                      paper={paper}
+                      onRate={handleRatePaper}
+                      onMarkSeen={handleMarkSeen}
+                      isReplacement={false}
+                    />
+                  ))}
+                </div>
+              ) : streamLoading ? (
+                <p className="no-papers-message">Latest papers will appear after recommendations are generated...</p>
+              ) : (
+                <p className="no-papers-message">No latest papers available yet. Loading...</p>
+              )}
             </div>
-          ) : streamLoading ? (
-            <p className="no-papers-message">Latest papers will appear after recommendations are generated...</p>
-          ) : (
-            <p className="no-papers-message">No latest papers available yet. Loading...</p>
-          )}
+
+            {/* Newsletter Settings Sidebar */}
+            <div className="w-full xl:w-80 flex-shrink-0">
+              <NewsletterSettings projectId={projectId!} />
+            </div>
+          </div>
         </div>
 
         {/* Recommendations Section */}

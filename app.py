@@ -273,6 +273,33 @@ def api_create_project():
     return jsonify({"projectId": project_id}), 201
 
 
+
+@app.route("/api/subscribe_newsletter", methods=["POST"])
+def subscribe_newsletter():
+    """
+    Subscribe to the newsletter for a specific project.
+    Currently just logs the request data.
+    """
+    if not request.auth:
+        return {"error": "Not authenticated"}, 401
+    
+    user_id = request.auth["user_id"]
+    data = request.get_json() or {}
+    
+    project_id = data.get("projectId")
+    enabled = data.get("enabled", False)
+    cadence = data.get("cadence")
+    day_of_week = data.get("dayOfWeek")
+    
+    if not project_id:
+        return jsonify({"error": "Missing projectId"}), 400
+        
+    logger.info(f"Newsletter subscription request - User: {user_id}, Project: {project_id}")
+    logger.info(f"Settings - Enabled: {enabled}, Cadence: {cadence}, Day: {day_of_week}")
+    
+    return jsonify({"success": True, "message": "Preferences logged"}), 200
+
+
 @app.route("/api/getProjects", methods=["GET"])
 def get_projects():
     """
