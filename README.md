@@ -2,6 +2,12 @@
 
 A modular, extensible agentic academic paper recommendation system leveraging LLMs, vector search, and modern backend best practices. Designed for multi-step reasoning, project-specific recommendations, and robust filtering, with a focus on maintainability and extensibility.
 
+## 📹 System Demo
+
+[![Capstone 2025 Demo](https://img.youtube.com/vi/hgFQdHzWkDA/maxresdefault.jpg)](https://youtu.be/hgFQdHzWkDA)
+
+*Watch a 3-minute walkthrough of our agentic paper recommendation system in action*
+
 ## Folder Structure
 
 ```
