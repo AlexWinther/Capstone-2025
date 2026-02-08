@@ -18,8 +18,9 @@ Please delete options that are not relevant.
 
 Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration.
 
-- [ ] Test A
-- [ ] Test B
+- [ ] Unit tests (e.g., ./run_tests.sh tests/unit -v)
+- [ ] E2E tests (e.g., TEST_MODE=true docker compose up -d --build, then ./run_tests.sh tests/e2e -v)
+- [ ] Not tested (explain why)
 
 ## Reviewers
 

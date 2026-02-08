@@ -9,47 +9,36 @@ Capstone-2025/
 ├── app.py
 ├── README.md
 ├── requirements.txt
-├── requirements-dev.txt
+├── pyproject.toml
 ├── docker-compose.yml
 ├── Dockerfile
 ├── llm/
-│   ├── StategraphAgent.py
-│   ├── Agent.py
+│   ├── agent.py
+│   ├── agent_cli.py
+│   ├── nodes/
 │   ├── tools/
 │   ├── util/
 │   ├── Embeddings.py
 │   ├── LLMDefinition.py
-│   ├── Prompts.py
-│   └── ...
+│   └── Prompts.py
 ├── database/
 │   ├── papers_database_handler.py
 │   ├── projects_database_handler.py
 │   ├── projectpaper_database_handler.py
-│   └── ...
+│   └── database_connection.py
 ├── chroma_db/
 │   ├── chroma_vector_db.py
-│   ├── Tests/
 │   └── ...
 ├── paper_handling/
-│   ├── paper_handler.py
+│   └── paper_handler.py
+├── evaluation/
 │   └── ...
-├── pubsub/
-│   └── ...
-├── evaluations/
+├── frontend/
 │   └── ...
 ├── static/
-│   ├── css/
-│   └── js/
 ├── templates/
-│   ├── dashboard.html
-│   ├── create_project.html
-│   ├── project_overview.html
-│   └── pubsub_home.html
 ├── utils/
-│   └── status.py
 ├── Notification/
-│   └── SendMail.py
-├── paper_ranking/
 └── ...
 ```
 
@@ -63,7 +52,7 @@ The Capstone-2025 project is a modular, extensible academic paper recommendation
 
 #### **Key Components**
 - **Flask API (`app.py`)**: Exposes REST endpoints for project management, recommendations, ratings, newsletter, and PDF extraction. Orchestrates the agent and handles all frontend/backend communication.
-- **Stategraph Agent (`llm/StategraphAgent.py`)**: The main orchestrator for multi-step academic search and filtering. Implements a state machine with nodes for input handling, out-of-scope detection, quality control, paper ingestion, vector search, filtering, and result storage.
+- **Agent Graph (`llm/agent.py`, `llm/nodes/`)**: The main orchestrator for multi-step academic search and filtering. Implements a graph of nodes for input handling, out-of-scope detection, quality control, paper ingestion, vector search, filtering, and result storage.
 - **Tools Layer (`llm/tools/`)**: Implements modular tools for paper ingestion, filtering, ranking, and project management. Tools are registered and aggregated for agent use.
 - **Database Handlers (`database/`)**: Encapsulate all database operations for papers, projects, and project-paper links. Ensure robust, transactional access to PostgreSQL.
 - **ChromaDB Vector Search (`chroma_db/chroma_vector_db.py`)**: Handles storage and retrieval of paper embeddings, and performs similarity search for recommendations.
@@ -109,7 +98,7 @@ The Capstone-2025 project is a modular, extensible academic paper recommendation
 * [uv](https://docs.astral.sh/uv/getting-started/installation/#__tabbed_1_1)
 * Python 3.11 (managed by uv)
 * An active OpenAI API Key
-* Docker Desktop (or docker + docker-compose)
+* Docker Desktop (or docker + docker-compose) for local services
 
 ### Local Development
 
@@ -121,6 +110,11 @@ The Capstone-2025 project is a modular, extensible academic paper recommendation
 1.  **Replicate the virtual environment with all dependencies:**
     ```bash
     uv sync
+    ```
+
+    **Optional (dev tools and tests):**
+    ```bash
+    uv sync --group dev
     ```
 
 1.  **Set up Environment Variables:**
@@ -154,16 +148,46 @@ The Capstone-2025 project is a modular, extensible academic paper recommendation
         ```
         (For permanent storage on Windows, search for "environment variables" in the Start Menu).
 
-1. **Set up Database Environment Variables:**
-    This project uses also a **PostgreSQL** database, and you must connect to a local copy of it.
-    You need to set also the environment variables for the connection to it (used for **Docker**):
+1. **Set up Database and Service Environment Variables:**
+    This project uses PostgreSQL, Clerk, and optional logging integrations. Start from the provided
+    example file and edit as needed:
+
+    **Linux/macOS:**
+    ```bash
+    cp .env.example .env
     ```
-   DB_HOST="your_remote_postgresql_server_ip_or_hostname" Used only when connecting to the remote
+
+    **Windows (PowerShell):**
+    ```powershell
+    Copy-Item .env.example .env
+    ```
+
+    Then update values in `.env`, including:
+
+    ```env
+    OPENAI_API_KEY="your_actual_openai_api_key_here"
+
+    # Database Environment Variables
+    DB_HOST="your_remote_postgresql_server_ip_or_hostname" # Used only when connecting to remote
     DB_PORT="5432"
     DB_NAME="papers"
     DB_USER="your_username_for_postgresql"
     DB_PASSWORD="your_password_for_postgresql"
-   ```
+
+    # Clerk Config (https://clerk.com/)
+    CLERK_SECRET_KEY="your_clerk_secret_key"
+    CLERK_PUBLISHABLE_KEY="your_clerk_publishable_key"
+    CLERK_FRONTEND_API_URL="your_clerk_frontend_api_url"
+    HOSTNAME="app_hostname" # e.g. http://localhost
+
+    # Logging (optional)
+    GRAFANA_LOKI_URL="your_grafana_loki_url"
+    GRAFANA_USER_ID="your_user_id_for_grafana"
+    GRAFANA_API_KEY="your_api_key_for_grafana"
+
+    # Docker Architecture (optional)
+    DOCKER_ARCH="arm64" # or amd64
+    ```
 
 1.  **Running individual files in the project:**
     ```bash
@@ -178,9 +202,19 @@ The Capstone-2025 project is a modular, extensible academic paper recommendation
 
 
 ### Running the Project
+
+**Start local services (PostgreSQL, app, etc.):**
 ```bash
 docker compose up -d
 ```
+
+**Run the backend locally (optional, if not using the app container):**
+```bash
+uv run app.py
+```
+
+**Frontend (optional):**
+See [frontend/README.md](frontend/README.md) for local UI development.
 
 ---
 
@@ -223,13 +257,6 @@ For more details, examples, and troubleshooting, see [migrations/README.md](migr
 
 ### Testing
 
-The project includes comprehensive end-to-end (E2E) tests using Playwright and Pytest. Tests run automatically in CI/CD on pull requests and pushes to main.
-
-For local testing and debugging, see the complete testing guide:
-- **[E2E Testing Documentation](tests/e2e/README.md)**
-
-## Testing
-
 The project includes both unit tests and end-to-end (E2E) tests. For detailed testing documentation, see [tests/e2e/README.md](tests/e2e/README.md).
 
 ### Quick Test Commands
@@ -242,7 +269,7 @@ The project includes both unit tests and end-to-end (E2E) tests. For detailed te
 ./run_tests.sh tests/e2e -v
 
 # Run all unit tests
-./run_tests.sh llm/Tests chroma_db/Tests paper_handling -v
+./run_tests.sh tests/unit -v
 
 # Run specific test file
 ./run_tests.sh tests/e2e/test_basic.py -v
@@ -254,7 +281,7 @@ The project includes both unit tests and end-to-end (E2E) tests. For detailed te
 run_tests.bat tests/e2e -v
 
 # Run all unit tests
-run_tests.bat llm/Tests chroma_db/Tests paper_handling -v
+run_tests.bat tests/unit -v
 
 # Run specific test file
 run_tests.bat tests/e2e/test_basic.py -v
@@ -265,11 +292,16 @@ run_tests.bat tests/e2e/test_basic.py -v
 
 ### Contribution workflow
 * Before creating a PR, make sure that your local commits go through pre-commit hooks, which check
-for formatting, linting and security issues. They also update the needed modules in
-**requirements.txt**. First you have to set this up:
-1.  Make sure you install `pre-commit` and `pigar` modules with:
+  for formatting, linting and security issues. They also update the needed modules in
+  **requirements.txt**. First you have to set this up:
+1.  Install dev dependencies:
+    ```bash
+    uv sync --group dev
     ```
-    pip install -r requirements-dev.txt
+
+1.  Install `pre-commit` if it is not already available in your environment:
+    ```bash
+    uv pip install pre-commit
     ```
 
 1.  Issue the following command in your virtual environment (needed only after initial setup):
@@ -295,7 +327,7 @@ for formatting, linting and security issues. They also update the needed modules
 
 ### Extension Points
 
-- **Adding New Tools**: Implement a new function in `llm/tools/`, import it directly in the node that uses it, and then create a new node in `llm/StategraphAgent.py` and add the node to the existing graph.
+- **Adding New Tools**: Implement a new function in `llm/tools/`, import it directly in the node that uses it, and then create a new node in `llm/agent.py` or `llm/nodes/` and add the node to the existing graph.
 - **Custom Filters**: Extend `llm/util/agent_custom_filter.py` to add new operators or filtering logic.
 - **LLM/Embedding Models**: Update `llm/LLMDefinition.py` and `llm/Embeddings.py` to use new models or providers.
 - **Frontend Integration**: The API is designed to be frontend-agnostic and can be integrated with any modern web UI.
