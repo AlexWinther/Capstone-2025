@@ -32,10 +32,7 @@ class NoResultsHandler(BaseNode[AgentState, AgentDeps]):
     """
     If no papers are found after filtering, generate a smart explanation using the LLM.
     Finds the closest value for each filterable metric (year, citations, impact factor, etc.) using the find_closest_paper_metrics tool.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with no_results_message.
+    Updates `no_results_message` and ends the graph.
     """
 
     async def run(

@@ -27,10 +27,7 @@ node_logger = NodeLogger(
 class OutOfScopeHandler(BaseNode[AgentState, AgentDeps]):
     """
     Handle out-of-scope queries by providing explanation and requesting new input.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with out_of_scope_message and requires_user_input.
+    Updates `out_of_scope_message` and marks `requires_user_input`.
     """
 
     async def run(

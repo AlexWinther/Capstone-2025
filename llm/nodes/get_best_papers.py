@@ -28,10 +28,7 @@ node_logger = NodeLogger(
 class GetBestPapers(BaseNode[AgentState, AgentDeps]):
     """
     Retrieve the most relevant papers for a project based on filter instructions.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with papers_raw.
+    Updates `papers_raw` with ranked results.
     """
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> FilterPapers:
@@ -41,8 +38,6 @@ class GetBestPapers(BaseNode[AgentState, AgentDeps]):
 
         papers_raw = []
         try:
-            # Prefer keywords if available, else use user_query
-
             project_id = state.project_id
 
             # Determine retrieval count based on filter instructions

@@ -1,6 +1,6 @@
 """Minimal mock tooling used by the Pydantic AI state graph demo.
 
-The real `llm.StategraphAgent` pulls dozens of bespoke tools. For this first
+The real `llm.agent` pulls dozens of bespoke tools. For this first
 pass we keep the surface area intentionally tiny so the graph wiring can be
 reviewed without needing the upstream infra.
 """

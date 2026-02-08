@@ -27,10 +27,7 @@ node_logger = NodeLogger(
 class FilterPapers(BaseNode[AgentState, AgentDeps]):
     """
     Apply natural language filtering to the retrieved papers based on the user query.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with papers_filtered.
+    Updates `papers_filtered` and `applied_filter_criteria`.
     """
 
     async def run(

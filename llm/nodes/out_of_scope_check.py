@@ -28,10 +28,7 @@ node_logger = NodeLogger(
 class OutOfScopeCheck(BaseNode[AgentState, AgentDeps]):
     """
     Detect if the user query is out of scope for academic paper recommendations.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with out_of_scope_result.
+    Updates `out_of_scope_result` and may enrich `keywords` based on tool output.
     """
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> QualityControl:

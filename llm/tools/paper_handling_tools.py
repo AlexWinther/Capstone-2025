@@ -76,7 +76,7 @@ def store_papers_for_project(project_id: str, papers: list[dict]):
 
 async def update_papers_for_project(queries: list[str], project_id: str) -> str:
     """
-    Tool Name: update_papers
+    Tool Name: update_papers_for_project
     Description:
         This tool updates the paper database with the latest research papers and their embeddings
         based on a list of search queries. It performs the following steps:

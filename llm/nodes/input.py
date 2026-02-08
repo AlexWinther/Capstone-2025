@@ -22,10 +22,7 @@ node_logger = NodeLogger(
 class Input(BaseNode[AgentState, AgentDeps]):
     """
     Initialize the state with the user query and extract project_id if present.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with user_query, keywords, and project_id.
+    Reads state from the graph context and seeds `user_query`, `keywords`, and IDs.
     """
 
     user_message: str

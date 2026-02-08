@@ -36,10 +36,7 @@ node_logger = NodeLogger(
 class UpdatePapersByProject(BaseNode[AgentState, AgentDeps]):
     """
     Update the paper database for a specific project based on the user query and QC decision.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with update_papers_by_project_result.
+    Updates `update_papers_by_project_result` and related state metadata.
     """
 
     async def run(self, ctx: GraphRunContext[AgentState, AgentDeps]) -> GetBestPapers:

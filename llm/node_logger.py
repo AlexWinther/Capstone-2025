@@ -2,7 +2,7 @@ import json
 import logging
 from custom_logging import agent_logger
 
-# --- Error handling and logging decorator ---
+# --- Error handling and logging helpers ---
 
 logger = logging.getLogger("node_logger")
 logger.setLevel(logging.INFO)

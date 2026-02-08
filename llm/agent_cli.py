@@ -68,7 +68,7 @@ def run_agent_stream(user_query: str, project_id: str, user_id: str) -> None:
 def main() -> None:
     """
     Run a minimal CLI demo of the Stategraph agent backed by the project database.
-    This script needs the postgres database to be running, but no web app and no ChromaDB.
+    This script needs the postgres database and ChromaDB to be running, but no web app.
     """
 
     user_id = "cli_test_user"

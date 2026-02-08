@@ -24,10 +24,7 @@ node_logger = NodeLogger(
 class StorePapersForProject(BaseNode[AgentState, AgentDeps]):
     """
     Store the recommended papers for a project in the database.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with store_papers_for_project_result.
+    Updates `store_papers_for_project_result` and ends the graph.
     """
 
     async def run(

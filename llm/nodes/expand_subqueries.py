@@ -25,10 +25,7 @@ node_logger = NodeLogger(
 class ExpandSubqueries(BaseNode[AgentState, AgentDeps]):
     """
     If the QC decision was 'split', extract subqueries and keywords from the multi_step_reasoning tool result.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with extracted subqueries.
+    Updates `subqueries` for downstream processing.
     """
 
     async def run(

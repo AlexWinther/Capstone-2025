@@ -41,10 +41,7 @@ node_logger = NodeLogger(
 class QualityControl(BaseNode[AgentState, AgentDeps]):
     """
     Perform quality control and filter detection on the user query.
-    Args:
-        state (dict): The current agent state.
-    Returns:
-        dict: Updated state with QC decision, tool result, keywords, and filter instructions flag.
+    Updates QC decision, tool result, keywords, and filter instructions flag.
     """
 
     async def run(
